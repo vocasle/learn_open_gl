@@ -8,8 +8,18 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 void processInput(GLFWwindow *window) {
+    static bool fill = true;
+    static bool e_pressed = false;
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        e_pressed = true;
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE && e_pressed) {
+        fill = !fill;
+        glPolygonMode(GL_FRONT_AND_BACK, fill ? GL_FILL : GL_LINE);
+        e_pressed = false;
+    }
 }
 
 void check_shader_compile_error(uint shader)
@@ -135,7 +145,6 @@ void main()
 
         glUseProgram(shader_program);
         glBindVertexArray(VAO);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
