@@ -98,12 +98,14 @@ void main()
 
     constexpr float vertices[] = {
             -0.5f, -0.5f, 0.0f,
-            0.5f, -0.5f, 0.0f,
-            0.0f, 0.5f, 0.0f
+            -0.5f, 0.5f, 0.0f,
+            0.5f, 0.5f, 0.0f,
+            0.5f, -0.5f, 0.0f
     };
 
     constexpr const uint indices[] = {
-            0, 1, 2
+            0, 1, 2,
+            2, 3, 0
     };
 
     uint VAO;
@@ -133,7 +135,7 @@ void main()
 
         glUseProgram(shader_program);
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
