@@ -91,20 +91,45 @@ void main()
 }
 )";
 
+    constexpr const char *yellow_fragment_shader_source = R"(
+#version 330 core
+out vec4 frag_color;
+
+void main()
+{
+    frag_color = vec4(1.0f, 1.0f, 0.0f, 1.0f);
+}
+)";
+
     uint fragment_shader;
     fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment_shader, 1, &fragment_shader_source, nullptr);
     glCompileShader(fragment_shader);
     check_shader_compile_error(fragment_shader);
 
+    uint yellow_fragment_shader;
+    yellow_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(yellow_fragment_shader, 1, &yellow_fragment_shader_source, nullptr);
+    glCompileShader(yellow_fragment_shader);
+    check_shader_compile_error(yellow_fragment_shader);
+
     uint shader_program;
     shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
     glAttachShader(shader_program, fragment_shader);
     glLinkProgram(shader_program);
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
     check_program_link_error(shader_program);
+//    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+
+    uint yellow_shader_program;
+    yellow_shader_program = glCreateProgram();
+    glAttachShader(yellow_shader_program, vertex_shader);
+    glAttachShader(yellow_shader_program, yellow_fragment_shader);
+    glLinkProgram(yellow_shader_program);
+    check_program_link_error(yellow_shader_program);
+    glDeleteShader(vertex_shader);
+    glDeleteShader(yellow_fragment_shader);
 
     constexpr float vert1[] = {
             -0.5f, -0.5f, 0.0f,
@@ -168,6 +193,7 @@ void main()
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 
+        glUseProgram(yellow_shader_program);
         glBindVertexArray(VAO2);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 
