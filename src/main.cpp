@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -87,10 +88,11 @@ void main()
 #version 330 core
 out vec4 frag_color;
 in vec4 vertex_color;
+uniform vec4 color;
 
 void main()
 {
-    frag_color = vertex_color;
+    frag_color = color;
 }
 )";
 
@@ -193,6 +195,12 @@ void main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader_program);
+
+        float time_value = static_cast<float>(glfwGetTime());
+        float green_value = (std::sin(time_value) / 2.0f) + 0.5f;
+        int vertex_color_location = glGetUniformLocation(shader_program, "color");
+        glUniform4f(vertex_color_location, 0.0f, green_value, 0.0f, 1.0f);
+
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
 
