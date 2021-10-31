@@ -50,10 +50,10 @@ int main() {
     Shader shader("3.3.shader.vs", "3.3.shader.fs");
 
     constexpr float vertices[] = {
-            // positions        // colors
-            -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,
-            0.0f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f
+            // positions
+            -0.5f, -0.5f, 0.0f,
+            0.5f, -0.5f, 0.0f,
+            0.0f, 0.5f, 0.0f,
     };
 
     uint VAO;
@@ -65,14 +65,8 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), static_cast<void*>(nullptr));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    GLint location = glGetUniformLocation(shader.program_id, "offset");
-    constexpr float offset = 0.4f;
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -83,7 +77,6 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
-        glUniform1f(location, offset);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
