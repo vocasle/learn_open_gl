@@ -71,6 +71,9 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    GLint location = glGetUniformLocation(shader.program_id, "offset");
+    constexpr float offset = 0.4f;
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     while (!glfwWindowShouldClose(window)) {
@@ -80,6 +83,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
+        glUniform1f(location, offset);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
