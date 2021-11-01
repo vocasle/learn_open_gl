@@ -7,7 +7,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 find_package(GLFW3 REQUIRED)
 message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
-set(LIBS ${GLFW3_LIBRARY} GL glad dl)
+set(LIBS ${GLFW3_LIBRARY} GL glad dl stb_image)
 
 find_package(OpenGL REQUIRED)
 add_definitions(${OPENGL_DEFINITIONS})
@@ -35,7 +35,7 @@ set(1.getting_started
 #        3.1.shaders_uniform
 #        3.2.shaders_interpolation
         3.3.shaders_class
-#        4.1.textures
+        4.1.textures
 #        4.2.textures_combined
 #        4.4.textures_exercise2
 #        4.5.textures_exercise3
@@ -147,6 +147,15 @@ foreach(CHAPTER ${CHAPTERS})
                 "src/${CHAPTER}/${DEMO}/*.fs"
                 "src/${CHAPTER}/${DEMO}/*.gs"
                 )
+
+        file(GLOB ASSETS
+                "assets/*.jpg"
+                )
+
+        foreach(ASSET ${ASSETS})
+            file(COPY ${ASSET} DESTINATION ${CMAKE_SOURCE_DIR}/bin/assets)
+        endforeach()
+
         foreach(SHADER ${SHADERS})
                 file(COPY ${SHADER} DESTINATION ${CMAKE_SOURCE_DIR}/bin/${CHAPTER})
         endforeach()
