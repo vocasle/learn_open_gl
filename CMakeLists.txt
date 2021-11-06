@@ -150,6 +150,7 @@ foreach(CHAPTER ${CHAPTERS})
 
         file(GLOB ASSETS
                 "assets/*.jpg"
+                "assets/*.png"
                 )
 
         foreach(ASSET ${ASSETS})
