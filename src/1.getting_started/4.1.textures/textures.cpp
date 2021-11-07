@@ -101,6 +101,7 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+    stbi_set_flip_vertically_on_load(true);
     data = stbi_load("../assets/awesomeface.png", &width, &height, &nr_channels, 0);
     if (!data)
         std::cerr << "Failed to load texture from ../assets/awesomeface.png" << std::endl;
