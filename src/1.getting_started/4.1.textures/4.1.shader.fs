@@ -11,5 +11,5 @@ out vec4 out_color;
 void main()
 {
     vec2 reversed_face_coord = vec2(-texture_coord.x, texture_coord.y);
-    out_color = mix(texture(out_texture, texture_coord), texture(out_texture2, reversed_face_coord), 0.2);
+    out_color = mix(texture(out_texture, texture_coord), texture(out_texture2, reversed_face_coord), 0.5);
 }
