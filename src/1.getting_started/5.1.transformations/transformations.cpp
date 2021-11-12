@@ -32,6 +32,19 @@ struct Controller {
     float speed = 0.01f;
 };
 
+void clamp_translation(glm::mat4 &trans)
+{
+    if (trans[3][0] > 1.0f)
+        trans[3][0] = -1.0f;
+    else if (trans[3][0] < -1.0f)
+        trans[3][0] = 1.0f;
+
+    if (trans[3][1] > 1.0f)
+        trans[3][1] = -1.0f;
+    else if (trans[3][1] < -1.0f)
+        trans[3][1] = 1.0f;
+}
+
 void update_controls(Controller& controller)
 {
     float speed = controller.speed * 1.0f;
@@ -52,15 +65,7 @@ void update_controls(Controller& controller)
         break;
     }
 
-    if (controller.trans[3][0] > 1.0f)
-        controller.trans[3][0] = -1.0f;
-    else if (controller.trans[3][0] < -1.0f)
-        controller.trans[3][0] = 1.0f;
-
-    if (controller.trans[3][1] > 1.0f)
-        controller.trans[3][1] = -1.0f;
-    else if (controller.trans[3][1] < -1.0f)
-        controller.trans[3][1] = 1.0f;
+    clamp_translation(controller.trans);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
