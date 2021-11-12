@@ -7,7 +7,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 find_package(GLFW3 REQUIRED)
 message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
-set(LIBS ${GLFW3_LIBRARY} GL glad dl stb_image)
+find_package(GLM REQUIRED)
+message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
+
+set(LIBS ${GLFW3_LIBRARY} ${GLM_LIBRARY} GL glad dl stb_image)
 
 find_package(OpenGL REQUIRED)
 add_definitions(${OPENGL_DEFINITIONS})
@@ -40,7 +43,7 @@ set(1.getting_started
 #        4.4.textures_exercise2
 #        4.5.textures_exercise3
 #        4.6.textures_exercise4
-#        5.1.transformations
+        5.1.transformations
 #        5.2.transformations_exercise2
 #        6.1.coordinate_systems
 #        6.2.coordinate_systems_depth
@@ -139,7 +142,7 @@ foreach(CHAPTER ${CHAPTERS})
         add_executable(${NAME} ${SOURCE})
         target_link_libraries(${NAME} ${LIBS})
         target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-        set_target_properties(${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/${CHAPTER}")
+        set_target_properties(${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CHAPTER}")
 
         # copy shader files to build directory
         file(GLOB SHADERS
@@ -154,11 +157,11 @@ foreach(CHAPTER ${CHAPTERS})
                 )
 
         foreach(ASSET ${ASSETS})
-            file(COPY ${ASSET} DESTINATION ${CMAKE_SOURCE_DIR}/bin/assets)
+            file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/assets)
         endforeach()
 
         foreach(SHADER ${SHADERS})
-                file(COPY ${SHADER} DESTINATION ${CMAKE_SOURCE_DIR}/bin/${CHAPTER})
+                file(COPY ${SHADER} DESTINATION ${CMAKE_BINARY_DIR}/${CHAPTER})
         endforeach()
     endforeach()
 endforeach()
