@@ -26,46 +26,90 @@ enum class Direction {
     up, down, left, right, none
 };
 
+const char* direction_as_string(Direction direction)
+{
+    switch (direction) {
+    case Direction::up:
+        return "up";
+        break;
+    case Direction::down:
+        return "down";
+        break;
+    case Direction::left:
+        return "left";
+        break;
+    case Direction::right:
+        return "right";
+        break;
+    case Direction::none:
+        return "none";
+        break;
+    default:
+        return "default";
+    }
+}
+
+float direction_as_angle(Direction direction)
+{
+    switch (direction) {
+    case Direction::up:
+        return glm::radians(90.0f);
+        break;
+    case Direction::down:
+        return glm::radians(270.0f);
+        break;
+    case Direction::left:
+        return glm::radians(180.0f);
+        break;
+    case Direction::right:
+        return glm::radians(0.0f);
+        break;
+    case Direction::none:
+        return 0.0f;
+        break;
+    default:
+        return 0.0f;
+    }
+}
+
 struct Controller {
     Direction direction = Direction::none;
-    glm::mat4 trans = glm::mat4(1.0f);
+    Direction prev_direction = Direction::none;
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
     float speed = 0.01f;
+    float angle = 0.0f;
 };
 
-void clamp_translation(glm::mat4 &trans)
+void clamp_translation(glm::mat4& trans)
 {
-    if (trans[3][0] > 1.0f)
-        trans[3][0] = -1.0f;
-    else if (trans[3][0] < -1.0f)
-        trans[3][0] = 1.0f;
+    constexpr float max = 50.0f;
+    if (trans[3][0]>max)
+        trans[3][0] = -max;
+    else if (trans[3][0]<-max)
+        trans[3][0] = max;
 
-    if (trans[3][1] > 1.0f)
-        trans[3][1] = -1.0f;
-    else if (trans[3][1] < -1.0f)
-        trans[3][1] = 1.0f;
+    if (trans[3][1]>max)
+        trans[3][1] = -max;
+    else if (trans[3][1]<-max)
+        trans[3][1] = max;
 }
 
 void update_controls(Controller& controller)
 {
-    float speed = controller.speed * 1.0f;
-    switch (controller.direction) {
-    case Direction::up:
-        controller.trans = glm::translate(controller.trans, glm::vec3(0.0f, speed , 0.0f));
-        break;
-    case Direction::down:
-        controller.trans = glm::translate(controller.trans, glm::vec3(0.0f, -speed, 0.0f));
-        break;
-    case Direction::left:
-        controller.trans = glm::translate(controller.trans, glm::vec3(-speed, 0.0f, 0.0f));
-        break;
-    case Direction::right:
-        controller.trans = glm::translate(controller.trans, glm::vec3(speed, 0.0f, 0.0f));
-        break;
-    case Direction::none:
-        break;
+    float speed = controller.speed*1.0f;
+    const glm::vec3 z_axis(0.0f, 0.0f, 1.0f);
+    static bool test = false;
+
+    controller.view = glm::translate(controller.view, glm::vec3(speed, 0.0f, 0.0f));
+    if (controller.direction!=controller.prev_direction && controller.direction!=Direction::none) {
+        float angle = direction_as_angle(controller.direction);
+        controller.view = glm::rotate(controller.view, angle - controller.angle, z_axis);
+        controller.angle = angle;
     }
 
-    clamp_translation(controller.trans);
+    controller.prev_direction = controller.direction;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -73,7 +117,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window, Controller& controller)
+void process_input(GLFWwindow* window, Controller& controller)
 {
     static bool fill = true;
     static bool e_pressed = false;
@@ -87,14 +131,17 @@ void processInput(GLFWwindow* window, Controller& controller)
         glPolygonMode(GL_FRONT_AND_BACK, fill ? GL_FILL : GL_LINE);
         e_pressed = false;
     }
-    else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+
+    else if (glfwGetKey(window, GLFW_KEY_UP)==GLFW_PRESS)
         controller.direction = Direction::up;
-    else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_DOWN)==GLFW_PRESS)
         controller.direction = Direction::down;
-    else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_LEFT)==GLFW_PRESS)
         controller.direction = Direction::left;
-    else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_RIGHT)==GLFW_PRESS)
         controller.direction = Direction::right;
+
+    update_controls(controller);
 }
 
 GLFWwindow* init_glfw();
@@ -103,10 +150,10 @@ VertexData init_vertices()
 {
     VertexData vertex_data;
     vertex_data.vertices = {
-            0.0f, 0.0f, 0.0f,
-            0.0f, 0.1f, 0.0f,
-            0.1f, 0.0f, 0.0f,
-            0.1f, 0.1f, 0.0f
+            -1.0f, -1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+            -1.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 0.0f
     };
 
     vertex_data.indices = {
@@ -119,13 +166,14 @@ VertexData init_vertices()
 
     glGenBuffers(1, &vertex_data.VBO);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_data.VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertex_data.vertices.size() * sizeof(float), &vertex_data.vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_data.vertices.size()*sizeof(float), &vertex_data.vertices[0], GL_STATIC_DRAW);
 
     glGenBuffers(1, &vertex_data.EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_data.EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_data.indices.size() * sizeof(uint), &vertex_data.indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_data.indices.size()*sizeof(uint), &vertex_data.indices[0],
+            GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(NULL));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), reinterpret_cast<void*>(NULL));
     glEnableVertexAttribArray(0);
 
     return vertex_data;
@@ -139,21 +187,42 @@ int main()
 
     Shader shader("5.1.shader.vs", "5.1.shader.fs");
     VertexData vertex_data = init_vertices();
+
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
     Controller controller;
 
+    glm::mat4 view(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -10.0f));
+
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
+
+    controller.view = view;
+    controller.model = model;
+    controller.projection = projection;
+
     while (!glfwWindowShouldClose(window)) {
-        processInput(window, controller);
+        process_input(window, controller);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.use();
-        update_controls(controller);
-        uint transform_loc = glGetUniformLocation(shader.program_id, "transform");
-        glUniformMatrix4fv(transform_loc, 1, GL_FALSE, glm::value_ptr(controller.trans));
+        GLint model_loc = glGetUniformLocation(shader.program_id, "model");
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
+        GLint view_loc = glGetUniformLocation(shader.program_id, "view");
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(controller.view));
+        GLint projection_loc = glGetUniformLocation(shader.program_id, "projection");
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
 
         glBindVertexArray(vertex_data.VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+//        trans = glm::translate(controller.trans, glm::vec3(0.2f, 0.0f, 0.0f));
+//        glUniformMatrix4fv(transform_loc, 1, GL_FALSE, glm::value_ptr(trans));
+//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
