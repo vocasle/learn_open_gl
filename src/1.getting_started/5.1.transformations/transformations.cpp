@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <vector>
+#include <thread>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,6 +12,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include "miniaudio.h"
 
 #include "shader.h"
 
@@ -80,6 +83,7 @@ struct Controller {
     glm::mat4 projection;
     float speed = 0.01f;
     float angle = 0.0f;
+    bool quit_game = false;
 };
 
 void clamp_translation(glm::mat4& trans)
@@ -140,6 +144,8 @@ void process_input(GLFWwindow* window, Controller& controller)
         controller.direction = Direction::left;
     else if (glfwGetKey(window, GLFW_KEY_RIGHT)==GLFW_PRESS)
         controller.direction = Direction::right;
+    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        controller.quit_game = true;
 
     update_controls(controller);
 }
@@ -179,6 +185,8 @@ VertexData init_vertices()
     return vertex_data;
 }
 
+void play_audio(const char *file_name);
+
 int main()
 {
     GLFWwindow* window = init_glfw();
@@ -193,7 +201,7 @@ int main()
     Controller controller;
 
     glm::mat4 view(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -10.0f));
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -20.0f));
 
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f/600.0f, 0.1f, 100.0f);
@@ -202,8 +210,16 @@ int main()
     controller.model = model;
     controller.projection = projection;
 
+    glm::vec4 color(1.0f);
+
+    std::thread audio(play_audio, "../assets/Greenberg.mp3");
+
+
     while (!glfwWindowShouldClose(window)) {
         process_input(window, controller);
+
+        if (controller.quit_game)
+            break;
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -215,13 +231,28 @@ int main()
         glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(controller.view));
         GLint projection_loc = glGetUniformLocation(shader.program_id, "projection");
         glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
+        GLint color_loc = glGetUniformLocation(shader.program_id, "in_color");
+        color = glm::vec4(1.0f);
+        glUniform4fv(color_loc, 1, glm::value_ptr(color));
 
         glBindVertexArray(vertex_data.VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-//        trans = glm::translate(controller.trans, glm::vec3(0.2f, 0.0f, 0.0f));
-//        glUniformMatrix4fv(transform_loc, 1, GL_FALSE, glm::value_ptr(trans));
-//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glm::mat4 trans = glm::translate(controller.view, glm::vec3(-2.1f, 0.0f, 0.0f));
+        color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans));
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
+        glUniform4fv(color_loc, 1, glm::value_ptr(color));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+        glm::mat4 trans2 = glm::translate(trans, glm::vec3(-2.1f, 0.0f, 0.0f));
+        color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans2));
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
+        glUniform4fv(color_loc, 1, glm::value_ptr(color));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
 
         glfwSwapBuffers(window);
@@ -257,4 +288,61 @@ GLFWwindow* init_glfw()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     return window;
+}
+
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    ma_bool32 isLooping = MA_TRUE;
+
+    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
+    if (pDecoder == NULL) {
+        return;
+    }
+
+    /*
+    A decoder is a data source which means you can seemlessly plug it into the ma_data_source API. We can therefore take advantage
+    of the "loop" parameter of ma_data_source_read_pcm_frames() to handle looping for us.
+    */
+    ma_data_source_read_pcm_frames(pDecoder, pOutput, frameCount, NULL, isLooping);
+
+    (void)pInput;
+}
+
+void play_audio(const char *file_name)
+{
+    ma_result result;
+    ma_decoder decoder;
+    ma_device_config deviceConfig;
+    ma_device device;
+
+    result = ma_decoder_init_file(file_name, NULL, &decoder);
+    if (result != MA_SUCCESS) {
+        return;
+    }
+
+    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format   = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate        = decoder.outputSampleRate;
+    deviceConfig.dataCallback      = data_callback;
+    deviceConfig.pUserData         = &decoder;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+        printf("Failed to open playback device.\n");
+        ma_decoder_uninit(&decoder);
+        return;
+    }
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+        printf("Failed to start playback device.\n");
+        ma_device_uninit(&device);
+        ma_decoder_uninit(&decoder);
+        return;
+    }
+
+    printf("Press Enter to quit...");
+    getchar();
+
+    ma_device_uninit(&device);
+    ma_decoder_uninit(&decoder);
 }

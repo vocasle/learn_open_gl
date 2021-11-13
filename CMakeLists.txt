@@ -10,7 +10,7 @@ message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
 find_package(GLM REQUIRED)
 message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
 
-set(LIBS ${GLFW3_LIBRARY} ${GLM_LIBRARY} GL glad dl stb_image)
+set(LIBS ${GLFW3_LIBRARY} ${GLM_LIBRARY} GL glad dl stb_image minaudio)
 
 find_package(OpenGL REQUIRED)
 add_definitions(${OPENGL_DEFINITIONS})
@@ -140,7 +140,7 @@ foreach(CHAPTER ${CHAPTERS})
                 )
         set(NAME "${CHAPTER}__${DEMO}")
         add_executable(${NAME} ${SOURCE})
-        target_link_libraries(${NAME} ${LIBS})
+        target_link_libraries(${NAME} PRIVATE ${LIBS})
         target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
         set_target_properties(${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CHAPTER}")
 
@@ -154,6 +154,7 @@ foreach(CHAPTER ${CHAPTERS})
         file(GLOB ASSETS
                 "assets/*.jpg"
                 "assets/*.png"
+                "assets/*.mp3"
                 )
 
         foreach(ASSET ${ASSETS})
