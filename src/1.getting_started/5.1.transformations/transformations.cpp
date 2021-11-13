@@ -110,12 +110,16 @@ void update_controls(Controller& controller)
     const glm::vec3 z_axis(0.0f, 0.0f, 1.0f);
 
     controller.view = glm::translate(controller.view, glm::vec3(speed, 0.0f, 0.0f));
-    if (controller.direction!=controller.prev_direction && controller.direction!=Direction::none) {
+    const bool is_moving_along_x_axis =
+            (controller.direction==Direction::left || controller.direction==Direction::right)
+                    && (controller.prev_direction==Direction::left || controller.prev_direction==Direction::right);
+    if (controller.direction!=Direction::none && controller.direction!=controller.prev_direction
+            && !is_moving_along_x_axis) {
         float angle = direction_as_angle(controller.direction);
-        controller.view = glm::rotate(controller.view, angle - controller.angle, z_axis);
+        controller.view = glm::rotate(controller.view, angle-controller.angle, z_axis);
         controller.angle = angle;
     }
-    
+
     controller.positions.push(controller.view);
     controller.prev_direction = controller.direction;
 }
@@ -148,7 +152,7 @@ void process_input(GLFWwindow* window, Controller& controller)
         controller.direction = Direction::left;
     else if (glfwGetKey(window, GLFW_KEY_RIGHT)==GLFW_PRESS)
         controller.direction = Direction::right;
-    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    else if (glfwGetKey(window, GLFW_KEY_Q)==GLFW_PRESS)
         controller.quit_game = true;
 }
 
@@ -187,7 +191,7 @@ VertexData init_vertices()
     return vertex_data;
 }
 
-void play_audio(const char *file_name);
+void play_audio(const char* file_name);
 
 int main()
 {
@@ -214,12 +218,14 @@ int main()
 
     glm::vec4 color(1.0f);
     glm::mat4 mat(1.0f);
+    glm::mat4 mat2(1.0f);
+    std::queue<glm::mat4> positions;
 //    std::thread audio(play_audio, "../assets/Greenberg.mp3");
 
     while (!glfwWindowShouldClose(window)) {
         process_input(window, controller);
         --controller.cool_down;
-        if (controller.cool_down < 0) {
+        if (controller.cool_down<0) {
             update_controls(controller);
             controller.cool_down = Controller::cool_down_max;
         }
@@ -246,9 +252,10 @@ int main()
 
 
 //        glm::mat4 trans = glm::translate(controller.view, glm::vec3(-2.1f, 0.0f, 0.0f));
-        if (controller.positions.size() > 1) {
+        if (controller.positions.size()>1) {
             mat = controller.positions.front();
             controller.positions.pop();
+            positions.push(mat);
         }
         std::cout << "size: " << controller.positions.size() << std::endl;
         color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -258,14 +265,16 @@ int main()
         glUniform4fv(color_loc, 1, glm::value_ptr(color));
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-//        glm::mat4 trans2 = glm::translate(trans, glm::vec3(-2.1f, 0.0f, 0.0f));
-//        color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-//        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
-//        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans2));
-//        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
-//        glUniform4fv(color_loc, 1, glm::value_ptr(color));
-//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
+        if (positions.size()>1) {
+            mat2 = positions.front();
+            positions.pop();
+        }
+        color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(mat2));
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
+        glUniform4fv(color_loc, 1, glm::value_ptr(color));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -306,8 +315,8 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 {
     ma_bool32 isLooping = MA_TRUE;
 
-    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
-    if (pDecoder == NULL) {
+    ma_decoder* pDecoder = (ma_decoder*) pDevice->pUserData;
+    if (pDecoder==NULL) {
         return;
     }
 
@@ -317,10 +326,10 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     */
     ma_data_source_read_pcm_frames(pDecoder, pOutput, frameCount, NULL, isLooping);
 
-    (void)pInput;
+    (void) pInput;
 }
 
-void play_audio(const char *file_name)
+void play_audio(const char* file_name)
 {
     ma_result result;
     ma_decoder decoder;
@@ -328,24 +337,24 @@ void play_audio(const char *file_name)
     ma_device device;
 
     result = ma_decoder_init_file(file_name, NULL, &decoder);
-    if (result != MA_SUCCESS) {
+    if (result!=MA_SUCCESS) {
         return;
     }
 
     deviceConfig = ma_device_config_init(ma_device_type_playback);
-    deviceConfig.playback.format   = decoder.outputFormat;
+    deviceConfig.playback.format = decoder.outputFormat;
     deviceConfig.playback.channels = decoder.outputChannels;
-    deviceConfig.sampleRate        = decoder.outputSampleRate;
-    deviceConfig.dataCallback      = data_callback;
-    deviceConfig.pUserData         = &decoder;
+    deviceConfig.sampleRate = decoder.outputSampleRate;
+    deviceConfig.dataCallback = data_callback;
+    deviceConfig.pUserData = &decoder;
 
-    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+    if (ma_device_init(NULL, &deviceConfig, &device)!=MA_SUCCESS) {
         printf("Failed to open playback device.\n");
         ma_decoder_uninit(&decoder);
         return;
     }
 
-    if (ma_device_start(&device) != MA_SUCCESS) {
+    if (ma_device_start(&device)!=MA_SUCCESS) {
         printf("Failed to start playback device.\n");
         ma_device_uninit(&device);
         ma_decoder_uninit(&decoder);
