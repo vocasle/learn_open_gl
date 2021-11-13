@@ -12,6 +12,7 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <queue>
 
 #include "miniaudio.h"
 
@@ -76,6 +77,7 @@ float direction_as_angle(Direction direction)
 }
 
 struct Controller {
+    static constexpr int cool_down_max = 10;
     Direction direction = Direction::none;
     Direction prev_direction = Direction::none;
     glm::mat4 model;
@@ -84,6 +86,8 @@ struct Controller {
     float speed = 0.01f;
     float angle = 0.0f;
     bool quit_game = false;
+    std::queue<glm::mat4> positions;
+    int cool_down = Controller::cool_down_max;
 };
 
 void clamp_translation(glm::mat4& trans)
@@ -102,9 +106,8 @@ void clamp_translation(glm::mat4& trans)
 
 void update_controls(Controller& controller)
 {
-    float speed = controller.speed*1.0f;
+    float speed = 2.0f;
     const glm::vec3 z_axis(0.0f, 0.0f, 1.0f);
-    static bool test = false;
 
     controller.view = glm::translate(controller.view, glm::vec3(speed, 0.0f, 0.0f));
     if (controller.direction!=controller.prev_direction && controller.direction!=Direction::none) {
@@ -112,7 +115,8 @@ void update_controls(Controller& controller)
         controller.view = glm::rotate(controller.view, angle - controller.angle, z_axis);
         controller.angle = angle;
     }
-
+    
+    controller.positions.push(controller.view);
     controller.prev_direction = controller.direction;
 }
 
@@ -146,8 +150,6 @@ void process_input(GLFWwindow* window, Controller& controller)
         controller.direction = Direction::right;
     else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         controller.quit_game = true;
-
-    update_controls(controller);
 }
 
 GLFWwindow* init_glfw();
@@ -211,12 +213,16 @@ int main()
     controller.projection = projection;
 
     glm::vec4 color(1.0f);
-
-    std::thread audio(play_audio, "../assets/Greenberg.mp3");
-
+    glm::mat4 mat(1.0f);
+//    std::thread audio(play_audio, "../assets/Greenberg.mp3");
 
     while (!glfwWindowShouldClose(window)) {
         process_input(window, controller);
+        --controller.cool_down;
+        if (controller.cool_down < 0) {
+            update_controls(controller);
+            controller.cool_down = Controller::cool_down_max;
+        }
 
         if (controller.quit_game)
             break;
@@ -238,21 +244,27 @@ int main()
         glBindVertexArray(vertex_data.VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-        glm::mat4 trans = glm::translate(controller.view, glm::vec3(-2.1f, 0.0f, 0.0f));
+
+//        glm::mat4 trans = glm::translate(controller.view, glm::vec3(-2.1f, 0.0f, 0.0f));
+        if (controller.positions.size() > 1) {
+            mat = controller.positions.front();
+            controller.positions.pop();
+        }
+        std::cout << "size: " << controller.positions.size() << std::endl;
         color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
         glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
-        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans));
+        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(mat));
         glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
         glUniform4fv(color_loc, 1, glm::value_ptr(color));
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-        glm::mat4 trans2 = glm::translate(trans, glm::vec3(-2.1f, 0.0f, 0.0f));
-        color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
-        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans2));
-        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
-        glUniform4fv(color_loc, 1, glm::value_ptr(color));
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+//        glm::mat4 trans2 = glm::translate(trans, glm::vec3(-2.1f, 0.0f, 0.0f));
+//        color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+//        glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(controller.model));
+//        glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(trans2));
+//        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(controller.projection));
+//        glUniform4fv(color_loc, 1, glm::value_ptr(color));
+//        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
 
         glfwSwapBuffers(window);
