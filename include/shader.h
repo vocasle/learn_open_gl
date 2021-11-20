@@ -13,6 +13,8 @@
 #include <iostream>
 #include <concepts>
 
+#include <glm/glm.hpp>
+
 class Shader {
 public:
     uint program_id;
@@ -28,6 +30,14 @@ public:
     void set_int(const std::string& name, int value) const;
 
     void set_float(const std::string& name, float value) const;
+
+    void set_vec2(const std::string& name, const glm::vec2& vec) const;
+
+    void set_vec3(const std::string& name, const glm::vec3& vec) const;
+
+    void set_vec4(const std::string& name, const glm::vec4& vec) const;
+
+    void set_mat4(const std::string& name, const glm::mat4& mat) const;
 };
 
 static void check_shader_compile_error(uint shader)
@@ -69,8 +79,8 @@ Shader::Shader(const char* vertex_file_path, const char* fragment_file_path)
 
     const std::string vertex_source_code = vertex_shader_stream.str();
     const std::string fragment_source_code = fragment_shader_stream.str();
-    const char *vertex_source_cstr = vertex_source_code.c_str();
-    const char *fragment_source_cstr = fragment_source_code.c_str();
+    const char* vertex_source_cstr = vertex_source_code.c_str();
+    const char* fragment_source_cstr = fragment_source_code.c_str();
 
     const uint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     const uint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -116,6 +126,26 @@ void Shader::set_float(const std::string& name, float value) const
 Shader::~Shader()
 {
     glDeleteProgram(program_id);
+}
+
+void Shader::set_vec2(const std::string& name, const glm::vec2& vec) const
+{
+    glUniform2fv(glGetUniformLocation(program_id, name.c_str()), 1, glm::value_ptr(vec));
+}
+
+void Shader::set_vec3(const std::string& name, const glm::vec3& vec) const
+{
+    glUniform3fv(glGetUniformLocation(program_id, name.c_str()), 1, glm::value_ptr(vec));
+}
+
+void Shader::set_vec4(const std::string& name, const glm::vec4& vec) const
+{
+    glUniform4fv(glGetUniformLocation(program_id, name.c_str()), 1, glm::value_ptr(vec));
+}
+
+void Shader::set_mat4(const std::string& name, const glm::mat4& mat) const
+{
+    glUniformMatrix4fv(glGetUniformLocation(program_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 #endif //LEARN_OPEN_GL_SHADER_H
