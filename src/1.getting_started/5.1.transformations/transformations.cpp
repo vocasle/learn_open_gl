@@ -49,8 +49,9 @@ struct GameState {
   double tick_time;
   bool game_over;
   Difficulty difficulty;
+  Difficulty prev_difficulty;
   GridSize grid_size;
-  static constexpr float grid_zoom_levels[] = {-8.0f, -15.0f, -40.0f};
+  static constexpr float grid_zoom_levels[] = {-12.0f, -20.0f, -40.0f};
   std::string song;
 
   Direction direction;
@@ -59,22 +60,27 @@ struct GameState {
   Camera camera;
 };
 
+bool should_update_grid(const GameState &state) {
+  return state.prev_difficulty != state.difficulty;
+}
+
 float get_zoom_level(const GameState &g);
 
 void update_difficulty(GameState &g, Difficulty d) {
   std::cout << "Updating difficulty to " << static_cast<int>(d) << std::endl;
+  g.difficulty = d;
   switch (d) {
   case Difficulty::LOW:g.song = "../assets/Greenberg.mp3";
     g.grid_size = GridSize::SMALL;
-    g.tick_time = 1.0;
+    g.tick_time = 0.5;
     break;
   case Difficulty::MEDIUM:g.song = "../assets/Drivin.mp3";
     g.grid_size = GridSize::MEDIUM;
-    g.tick_time = 0.5;
+    g.tick_time = 0.125;
     break;
   case Difficulty::HIGH:g.song = "../assets/Eastward.mp3";
     g.grid_size = GridSize::BIG;
-    g.tick_time = 0.25;
+    g.tick_time = 0.05;
     break;
   }
 }
@@ -148,9 +154,8 @@ Point spawn_meal(int grid_size, const std::deque<Point> &snake_parts) {
   }
 
   std::set<int> grid;
-  for (int i = -grid_size / 2 + 1; i <= grid_size / 2; ++i) {
+  for (int i = -grid_size / 2 + 1; i <= grid_size / 2; ++i)
     grid.insert(i);
-  }
 
   std::vector<int> free_x;
   std::vector<int> free_y;
@@ -168,35 +173,44 @@ Point spawn_meal(int grid_size, const std::deque<Point> &snake_parts) {
   int x = !free_x.empty() ? free_x[std::rand() % free_x.size()] : snake_parts[std::rand() % snake_parts.size()].x;
   int y = !free_y.empty() ? free_y[std::rand() % free_y.size()] : snake_parts[std::rand() % snake_parts.size()].y;
 
+  assert(x >= -grid_size / 2 && x <= grid_size / 2);
+  assert(y >= -grid_size / 2 && y <= grid_size / 2);
   return {x, y};
 }
 
+std::vector<float> generate_grid(uint32_t max_grid_size) {
+  const float offset = max_grid_size / 2.0f;
+  std::vector<float> vertices;
+  vertices.reserve(max_grid_size * 4 * 2);
+
+  for (int i = 0; i <= max_grid_size; ++i) {
+    vertices.push_back(-offset);
+    vertices.push_back(-offset + i);
+    vertices.push_back(offset);
+    vertices.push_back(-offset + i);
+  }
+
+  for (int i = 0; i <= max_grid_size; ++i) {
+    vertices.push_back(-offset + i);
+    vertices.push_back(-offset);
+    vertices.push_back(-offset + i);
+    vertices.push_back(offset);
+  }
+
+  return vertices;
+}
+
 VertexData init_grid_vertices() {
-  constexpr int max_grid_size = 32;
-  constexpr float offset = max_grid_size / 2.0f;
+  constexpr int max_grid_size = 8;
   VertexData vertex_data;
-  vertex_data.vertices.reserve(100);
-
-  for (int i = 0; i <= max_grid_size; ++i) {
-    vertex_data.vertices.push_back(-offset);
-    vertex_data.vertices.push_back(-offset + i);
-    vertex_data.vertices.push_back(offset);
-    vertex_data.vertices.push_back(-offset + i);
-  }
-
-  for (int i = 0; i <= max_grid_size; ++i) {
-    vertex_data.vertices.push_back(-offset + i);
-    vertex_data.vertices.push_back(-offset);
-    vertex_data.vertices.push_back(-offset + i);
-    vertex_data.vertices.push_back(offset);
-  }
+  vertex_data.vertices = generate_grid(max_grid_size);
 
   glGenVertexArrays(1, &vertex_data.VAO);
   glBindVertexArray(vertex_data.VAO);
 
   glGenBuffers(1, &vertex_data.VBO);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_data.VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertex_data.vertices.size(), &vertex_data.vertices[0], GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertex_data.vertices.size(), &vertex_data.vertices[0], GL_DYNAMIC_DRAW);
 
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
   glEnableVertexAttribArray(0);
@@ -204,10 +218,19 @@ VertexData init_grid_vertices() {
   return vertex_data;
 }
 
-void draw_grid(Shader &shader, const VertexData &vertex_data) {
+void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, uint32_t grid_size) {
   shader.use();
   shader.set_mat4("model", glm::mat4(1.0f));
   glBindVertexArray(vertex_data.VAO);
+
+  if (update_grid) {
+    vertex_data.vertices = generate_grid(static_cast<int>(grid_size));
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(double) * vertex_data.vertices.size(),
+                 &vertex_data.vertices[0],
+                 GL_DYNAMIC_DRAW);
+  }
+
   glDrawArrays(GL_LINES, 0, vertex_data.vertices.size());
 }
 
@@ -250,6 +273,7 @@ void init_game_state(GameState &state) {
   state.camera.view = glm::translate(glm::mat4(1.0f),
                                      glm::vec3(0.0f, 0.0f, get_zoom_level(state)));
 
+  state.difficulty = state.prev_difficulty = Difficulty::LOW;
   state.direction = state.prev_direction = Direction::NONE;
   update_difficulty(state, Difficulty::LOW);
 
@@ -287,7 +311,7 @@ int main() {
     game.end_time = glfwGetTime();
 
     if (is_frame_passed(game) && !game.game_over) {
-      std::cout << "Frame took: " << game.end_time - game.start_time << std::endl;
+      print_snake_pos(snake_parts, meal);
       if (ate_meal)
         meal = spawn_meal(static_cast<int>(game.grid_size), snake_parts);
 
@@ -301,7 +325,7 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_grid(grid_shader, line_vertex_data);
+    draw_grid(grid_shader, line_vertex_data, should_update_grid(game), static_cast<int>(game.grid_size));
     draw_snake(snake_parts, shader, vertex_data);
     if (!ate_meal)
       draw_meal(shader, vertex_data, meal);
@@ -310,6 +334,7 @@ int main() {
     glfwPollEvents();
 
     game.prev_direction = game.direction;
+    game.prev_difficulty = game.difficulty;
   }
 
   glfwTerminate();
