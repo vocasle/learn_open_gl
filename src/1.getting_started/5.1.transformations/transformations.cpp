@@ -43,6 +43,11 @@ struct Camera {
   glm::mat4 projection;
 };
 
+struct Point {
+  int x;
+  int y;
+};
+
 struct GameState {
   double start_time;
   double end_time;
@@ -56,6 +61,8 @@ struct GameState {
 
   Direction direction;
   Direction prev_direction;
+
+  Point velocity;
 
   Camera camera;
 };
@@ -85,11 +92,6 @@ void update_difficulty(GameState &g, Difficulty d) {
   }
 }
 
-struct Point {
-  int x;
-  int y;
-};
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 void process_input(GLFWwindow *window, GameState &state);
@@ -103,14 +105,25 @@ void play_audio(const char *file_name);
 Point update_pos(const Point &pos, GameState &state) {
   Point cur_pos = pos;
 
-  if (state.direction == Direction::RIGHT && state.prev_direction != Direction::LEFT)
-    ++cur_pos.x;
-  else if (state.direction == Direction::LEFT && state.prev_direction != Direction::RIGHT)
-    --cur_pos.x;
-  else if (state.direction == Direction::UP && state.prev_direction != Direction::DOWN)
-    ++cur_pos.y;
-  else if (state.direction == Direction::DOWN && state.prev_direction != Direction::UP)
-    --cur_pos.y;
+  if (state.prev_direction != state.direction
+      && (state.direction == Direction::RIGHT && state.prev_direction != Direction::LEFT
+          || state.direction == Direction::LEFT && state.prev_direction != Direction::RIGHT
+          || state.direction == Direction::UP && state.prev_direction != Direction::DOWN
+          || state.direction == Direction::DOWN && state.prev_direction != Direction::UP)) {
+    state.velocity = {0, 0};
+    if (state.direction == Direction::RIGHT)
+      ++state.velocity.x;
+    else if (state.direction == Direction::LEFT)
+      --state.velocity.x;
+    else if (state.direction == Direction::UP)
+      ++state.velocity.y;
+    else if (state.direction == Direction::DOWN)
+      --state.velocity.y;
+    state.prev_direction = state.direction;
+  }
+  cur_pos.x += state.velocity.x;
+  cur_pos.y += state.velocity.y;
+
   return cur_pos;
 }
 
@@ -277,6 +290,8 @@ void init_game_state(GameState &state) {
   state.direction = state.prev_direction = Direction::NONE;
   update_difficulty(state, Difficulty::LOW);
 
+  state.velocity = {0, 0};
+
 }
 
 bool is_frame_passed(const GameState &state) {
@@ -333,7 +348,7 @@ int main() {
     glfwSwapBuffers(window);
     glfwPollEvents();
 
-    game.prev_direction = game.direction;
+//    game.prev_direction = game.direction;
     game.prev_difficulty = game.difficulty;
   }
 
