@@ -6,19 +6,16 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
+#include <set>
 #include <deque>
-#include <random>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <set>
 
 #include "miniaudio.h"
-
 #include "shader.h"
 
 struct VertexData {
@@ -30,18 +27,53 @@ struct VertexData {
 };
 
 enum class Direction {
-  up, down, left, right, none
+  UP, DOWN, LEFT, RIGHT, NONE
+};
+
+enum class Difficulty {
+  LOW, MEDIUM, HIGH
+};
+
+enum class GridSize : uint8_t {
+  SMALL = 8, MEDIUM = 16, BIG = 32
 };
 
 struct Controller {
-  Direction direction = Direction::none;
-  Direction prev_direction = Direction::none;
+  static constexpr float grid_zoom_levels[] = {-8.0f, -40.0f, -15.0f};
+  Direction direction;
+  Direction prev_direction;
   glm::mat4 model;
   glm::mat4 view;
   glm::mat4 projection;
-  float angle = 0.0f;
-  std::deque<glm::mat4> positions;
+  Difficulty difficulty;
+  GridSize grid_size;
+  std::string song;
+  double tick_time;
 };
+
+void update_difficulty(Controller &c, Difficulty d) {
+  std::cout << "Updating difficulty to " << static_cast<int>(d) << std::endl;
+  switch (d) {
+  case Difficulty::LOW:c.song = "../assets/Greenberg.mp3";
+    c.grid_size = GridSize::SMALL;
+    c.tick_time = 1.0;
+    break;
+  case Difficulty::MEDIUM:c.song = "../assets/Drivin.mp3";
+    c.grid_size = GridSize::MEDIUM;
+    c.tick_time = 0.5;
+    break;
+  case Difficulty::HIGH:c.song = "../assets/Eastward.mp3";
+    c.grid_size = GridSize::BIG;
+    c.tick_time = 0.25;
+    break;
+  }
+}
+
+void init_controller(Controller &c) {
+  c.direction = Direction::NONE;
+  c.prev_direction = Direction::NONE;
+  update_difficulty(c, Difficulty::LOW);
+}
 
 struct Point {
   int x;
@@ -49,8 +81,6 @@ struct Point {
 };
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
-
-void update_controls(Controller &controller);
 
 void process_input(GLFWwindow *window, Controller &controller);
 
@@ -60,22 +90,18 @@ VertexData init_vertices();
 
 void play_audio(const char *file_name);
 
-void draw_piece(uint program_id, const VertexData &vertex_data, const glm::mat4 &view);
-
-Controller init_controller();
-
 void setup_uniforms(const Shader &shader, Controller &controller);
 
 Point update_pos(const Point &pos, Controller &c) {
   Point cur_pos = pos;
 
-  if (c.direction == Direction::right && c.prev_direction != Direction::left)
+  if (c.direction == Direction::RIGHT && c.prev_direction != Direction::LEFT)
     ++cur_pos.x;
-  else if (c.direction == Direction::left && c.prev_direction != Direction::right)
+  else if (c.direction == Direction::LEFT && c.prev_direction != Direction::RIGHT)
     --cur_pos.x;
-  else if (c.direction == Direction::up && c.prev_direction != Direction::down)
+  else if (c.direction == Direction::UP && c.prev_direction != Direction::DOWN)
     ++cur_pos.y;
-  else if (c.direction == Direction::down && c.prev_direction != Direction::up)
+  else if (c.direction == Direction::DOWN && c.prev_direction != Direction::UP)
     --cur_pos.y;
   return cur_pos;
 }
@@ -144,18 +170,19 @@ Point spawn_meal(int grid_size, const std::deque<Point> &snake_parts) {
 }
 
 VertexData init_grid_vertices() {
-  constexpr float offset = 4.0;
+  constexpr int max_grid_size = 32;
+  constexpr float offset = max_grid_size / 2.0f;
   VertexData vertex_data;
   vertex_data.vertices.reserve(100);
 
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i <= max_grid_size; ++i) {
     vertex_data.vertices.push_back(-offset);
     vertex_data.vertices.push_back(-offset + i);
     vertex_data.vertices.push_back(offset);
     vertex_data.vertices.push_back(-offset + i);
   }
 
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i <= max_grid_size; ++i) {
     vertex_data.vertices.push_back(-offset + i);
     vertex_data.vertices.push_back(-offset);
     vertex_data.vertices.push_back(-offset + i);
@@ -204,6 +231,12 @@ void draw_snake(const std::deque<Point> &deque_1, const Shader &shader, const Ve
 
 }
 
+struct GameState {
+  double start_time;
+  double end_time;
+  bool game_over;
+};
+
 void draw_meal(const Shader &shader, const VertexData &vertex_data, const Point &meal) {
   shader.use();
   glBindVertexArray(vertex_data.VAO);
@@ -211,23 +244,38 @@ void draw_meal(const Shader &shader, const VertexData &vertex_data, const Point 
   shader.set_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(meal.x - 0.5f, meal.y - 0.5f, 0.0f)));
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
+
+void init_game_state(GameState &state) {
+  state.game_over = false;
+  state.end_time = 0.0;
+  state.start_time = glfwGetTime();
+}
+
+bool is_frame_passed(const GameState &state, const Controller &c)
+{
+  return state.end_time - state.start_time >  c.tick_time;
+}
+
+//bool is_
+
 int main() {
   GLFWwindow *window = init_glfw();
   if (!window)
     return -1;
 
   Controller c;
+  init_controller(c);
   Controller c2;
+  init_controller(c2);
   Shader shader("5.1.shader.vs", "5.1.shader.fs");
   Shader line_shader("5.1.line_shader.vs", "5.1.line_shader.fs");
   VertexData vertex_data = init_vertices();
   setup_uniforms(line_shader, c);
   setup_uniforms(shader, c2);
+  GameState game;
+  init_game_state(game);
 
-  std::vector<std::vector<bool>> grid(10, std::vector<bool>(10, false));
   std::deque<Point> snake_parts(1, {1, 1});
-  double start_time = glfwGetTime();
-  double end_time = 0;
 
 ////    std::thread audio(play_audio, "../assets/Greenberg.mp3");
 
@@ -236,7 +284,6 @@ int main() {
   c2.model = glm::scale(c2.model, glm::vec3(0.5));
   c2.model = glm::translate(c2.model, glm::vec3(1.0f, 1.0f, 0.0f));
   shader.set_mat4("model", c2.model);
-  bool game_over = false;
   constexpr int grid_size = 8;
   Point meal = spawn_meal(grid_size, snake_parts);
   bool ate_meal = false;
@@ -244,18 +291,20 @@ int main() {
 
   while (!glfwWindowShouldClose(window)) {
     process_input(window, c2);
-    end_time = glfwGetTime();
+    process_input(window, c);
+    game.end_time = glfwGetTime();
 
-    if (end_time - start_time > tick_interval / 2 && !game_over) {
+    if (is_frame_passed(game, c) && !game.game_over) {
+      std::cout << "Frame took: " << game.end_time - game.start_time << std::endl;
       if (ate_meal)
         meal = spawn_meal(grid_size, snake_parts);
 
       Point p = update_pos(snake_parts[0], c2);
       ate_meal = collided_with_meal(p, meal);
       move_snake(p, snake_parts, ate_meal);
-      print_snake_pos(snake_parts, meal);
-      game_over = is_of_the_grid(p, grid_size) || collided_with_self(snake_parts);
-      start_time = end_time;
+//      print_snake_pos(snake_parts, meal);
+      game.game_over = is_of_the_grid(p, grid_size) || collided_with_self(snake_parts);
+      game.start_time = game.end_time;
     }
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -275,74 +324,36 @@ int main() {
   glfwTerminate();
 }
 
+float get_zoom_level(const Controller &c) {
+  switch (c.grid_size) {
+  case GridSize::MEDIUM:return c.grid_zoom_levels[1];
+  case GridSize::BIG:return c.grid_zoom_levels[2];
+  default:return c.grid_zoom_levels[0];
+  }
+}
+
 void setup_uniforms(const Shader &shader, Controller &controller) {
   glm::mat4 model(1.0f);
   model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 
   glm::mat4 view(1.0f);
-  view = glm::translate(view, glm::vec3(0.0f, 0.0f, -10.0f));
+  view = glm::translate(view,
+                        glm::vec3(0.0f, 0.0f, get_zoom_level(controller)));
 
   glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
   shader.use();
-  GLint model_loc = glGetUniformLocation(shader.program_id, "model");
-  GLint view_loc = glGetUniformLocation(shader.program_id, "view");
-  GLint projection_loc = glGetUniformLocation(shader.program_id, "projection");
-
-  glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model));
-  glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view));
-  glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(projection));
+  shader.set_mat4("model", model);
+  shader.set_mat4("view", view);
+  shader.set_mat4("projection", projection);
 
   controller.view = view;
   controller.model = model;
   controller.projection = projection;
 }
 
-void draw_piece(uint program_id, const VertexData &vertex_data, const glm::mat4 &view) {
-  const GLint view_loc = glGetUniformLocation(program_id, "view");
-  const GLint color_loc = glGetUniformLocation(program_id, "in_color");
-  glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view));
-  const glm::vec4 color(1.0f);
-  glUniform4fv(color_loc, 1, glm::value_ptr(color));
-
-  glBindVertexArray(vertex_data.VAO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-}
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
-}
-
-float direction_as_angle(Direction direction) {
-  switch (direction) {
-  case Direction::up:return glm::radians(90.0f);
-  case Direction::down:return glm::radians(270.0f);
-  case Direction::left:return glm::radians(180.0f);
-  case Direction::right:return glm::radians(0.0f);
-  default:return 0.0f;
-  }
-}
-
-void update_controls(Controller &controller) {
-  float speed = 2.0f;
-  const glm::vec3 z_axis(0.0f, 0.0f, 1.0f);
-
-  controller.view = glm::translate(controller.view, glm::vec3(speed, 0.0f, 0.0f));
-  const bool is_moving_along_x_axis =
-      (controller.direction == Direction::left || controller.direction == Direction::right)
-          && (controller.prev_direction == Direction::left || controller.prev_direction == Direction::right);
-  const bool is_moving_along_y_axis =
-      (controller.direction == Direction::up || controller.direction == Direction::down)
-          && (controller.prev_direction == Direction::up || controller.prev_direction == Direction::down);
-  if (controller.direction != Direction::none && controller.direction != controller.prev_direction
-      && !is_moving_along_x_axis && !is_moving_along_y_axis) {
-    float angle = direction_as_angle(controller.direction);
-    controller.view = glm::rotate(controller.view, angle - controller.angle, z_axis);
-    controller.angle = angle;
-  }
-
-  controller.positions.push_back(controller.view);
-  controller.prev_direction = controller.direction;
 }
 
 void process_input(GLFWwindow *window, Controller &controller) {
@@ -358,13 +369,19 @@ void process_input(GLFWwindow *window, Controller &controller) {
     glPolygonMode(GL_FRONT_AND_BACK, fill ? GL_FILL : GL_LINE);
     e_pressed = false;
   } else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    controller.direction = Direction::up;
+    controller.direction = Direction::UP;
   else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    controller.direction = Direction::down;
+    controller.direction = Direction::DOWN;
   else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    controller.direction = Direction::left;
+    controller.direction = Direction::LEFT;
   else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    controller.direction = Direction::right;
+    controller.direction = Direction::RIGHT;
+  else if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+    update_difficulty(controller, Difficulty::LOW);
+  else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+    update_difficulty(controller, Difficulty::MEDIUM);
+  else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+    update_difficulty(controller, Difficulty::HIGH);
 }
 
 VertexData init_vertices() {
@@ -424,24 +441,6 @@ GLFWwindow *init_glfw() {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   return window;
-}
-
-Controller init_controller() {
-  Controller controller;
-  return controller;
-}
-
-void clamp_translation(glm::mat4 &trans) {
-  constexpr float max = 50.0f;
-  if (trans[3][0] > max)
-    trans[3][0] = -max;
-  else if (trans[3][0] < -max)
-    trans[3][0] = max;
-
-  if (trans[3][1] > max)
-    trans[3][1] = -max;
-  else if (trans[3][1] < -max)
-    trans[3][1] = max;
 }
 
 void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount) {
