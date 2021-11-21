@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <set>
 #include <deque>
+#include <csignal>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -291,7 +292,6 @@ void init_game_state(GameState &state) {
   update_difficulty(state, Difficulty::LOW);
 
   state.velocity = {0, 0};
-
 }
 
 bool is_frame_passed(const GameState &state) {
@@ -357,10 +357,10 @@ int main() {
 
 float get_zoom_level(const GameState &g) {
   switch (g.grid_size) {
-  case GridSize::SMALL:return g.grid_zoom_levels[0];
-  case GridSize::MEDIUM:return g.grid_zoom_levels[1];
-  case GridSize::BIG:return g.grid_zoom_levels[2];
-  default:return g.grid_zoom_levels[0];
+  case GridSize::SMALL:return GameState::grid_zoom_levels[0];
+  case GridSize::MEDIUM:return GameState::grid_zoom_levels[1];
+  case GridSize::BIG:return GameState::grid_zoom_levels[2];
+  default:return GameState::grid_zoom_levels[0];
   }
 }
 
