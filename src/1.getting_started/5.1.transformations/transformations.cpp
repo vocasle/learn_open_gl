@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <set>
 #include <deque>
-#include <csignal>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,11 +17,13 @@
 
 #include "miniaudio.h"
 #include "shader.h"
+#include "stb_image.h"
 
 struct VertexData {
   uint VAO = 0;
   uint VBO = 0;
   uint EBO = 0;
+  uint texture = 0;
   std::vector<float> vertices;
   std::vector<uint> indices;
 };
@@ -66,6 +67,16 @@ struct GameState {
   Point velocity;
 
   Camera camera;
+
+  ma_decoder decoder;
+  ma_device_config device_config;
+  ma_device device;
+
+  std::deque<Point> snake_parts;
+  Point meal;
+  bool ate_meal;
+
+  float texture_angle;
 };
 
 bool should_update_grid(const GameState &state) {
@@ -73,6 +84,19 @@ bool should_update_grid(const GameState &state) {
 }
 
 float get_zoom_level(const GameState &g);
+void play_audio(GameState &);
+
+void reset_game(GameState &g) {
+  g.game_over = false;
+  g.end_time = 0.0;
+  g.start_time = glfwGetTime();
+  g.direction = g.prev_direction = Direction::NONE;
+  g.velocity = {0, 0};
+  g.snake_parts = std::deque<Point>(1, {1, 1});
+  g.ate_meal = true;
+  play_audio(g);
+  g.texture_angle = 0.0f;
+}
 
 void update_difficulty(GameState &g, Difficulty d) {
   std::cout << "Updating difficulty to " << static_cast<int>(d) << std::endl;
@@ -91,6 +115,8 @@ void update_difficulty(GameState &g, Difficulty d) {
     g.tick_time = 0.05;
     break;
   }
+
+  reset_game(g);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -101,8 +127,6 @@ GLFWwindow *init_glfw();
 
 VertexData init_vertices();
 
-void play_audio(const char *file_name);
-
 Point update_pos(const Point &pos, GameState &state) {
   Point cur_pos = pos;
 
@@ -112,14 +136,22 @@ Point update_pos(const Point &pos, GameState &state) {
           || state.direction == Direction::UP && state.prev_direction != Direction::DOWN
           || state.direction == Direction::DOWN && state.prev_direction != Direction::UP)) {
     state.velocity = {0, 0};
-    if (state.direction == Direction::RIGHT)
+    if (state.direction == Direction::RIGHT) {
+      state.texture_angle = 90.0f;
       ++state.velocity.x;
-    else if (state.direction == Direction::LEFT)
+    }
+    else if (state.direction == Direction::LEFT) {
+      state.texture_angle = 270.0f;
       --state.velocity.x;
-    else if (state.direction == Direction::UP)
+    }
+    else if (state.direction == Direction::UP) {
+      state.texture_angle = 180.0f;
       ++state.velocity.y;
-    else if (state.direction == Direction::DOWN)
+    }
+    else if (state.direction == Direction::DOWN) {
+      state.texture_angle = 0.0f;
       --state.velocity.y;
+    }
     state.prev_direction = state.direction;
   }
   cur_pos.x += state.velocity.x;
@@ -255,15 +287,19 @@ void print_snake_pos(const std::deque<Point> &snake, const Point &meal) {
   std::cout << std::endl;
 }
 
-void draw_snake(const std::deque<Point> &deque_1, const Shader &shader, const VertexData &vertex_data) {
+void draw_snake(const std::deque<Point> &parts,
+                const Shader &shader,
+                const VertexData &vertex_data,
+                const GameState &game) {
   shader.use();
-
-  for (auto p: deque_1) {
+  for (auto p: parts) {
     glm::mat4 model(1.0f);
     model = glm::translate(model, glm::vec3(p.x - 0.5f, p.y - 0.5f, 0.0f));
 //    model = glm::scale(model, glm::vec3(0.99f));
     shader.set_mat4("model", model);
     shader.set_vec4("in_color", glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    shader.set_float("in_rotation", glm::radians(game.texture_angle));
+    glBindTexture(GL_TEXTURE_2D, vertex_data.texture);
     glBindVertexArray(vertex_data.VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
   }
@@ -289,9 +325,13 @@ void init_game_state(GameState &state) {
 
   state.difficulty = state.prev_difficulty = Difficulty::LOW;
   state.direction = state.prev_direction = Direction::NONE;
-  update_difficulty(state, Difficulty::LOW);
-
+  state.grid_size = GridSize::SMALL;
+  state.song = "../assets/Greenberg.mp3";
+  state.tick_time = 0.5;
   state.velocity = {0, 0};
+  state.snake_parts = std::deque<Point>(1, {1, 1});
+  state.ate_meal = false;
+  state.texture_angle = 0.0f;
 }
 
 bool is_frame_passed(const GameState &state) {
@@ -300,6 +340,7 @@ bool is_frame_passed(const GameState &state) {
 
 void setup_uniforms(const Shader &shader, GameState &state);
 
+void debug_draw(const Shader &shader, const VertexData &vertex_data, const GameState &game);
 int main() {
   GLFWwindow *window = init_glfw();
   if (!window)
@@ -312,12 +353,7 @@ int main() {
 
   GameState game;
   init_game_state(game);
-  std::deque<Point> snake_parts(1, {1, 1});
-
-//    std::thread audio(play_audio, "../assets/Greenberg.mp3");
-
-  Point meal = spawn_meal(static_cast<int>(game.grid_size), snake_parts);
-  bool ate_meal = false;
+//  std::thread audio(play_audio, std::ref(game));
 
   while (!glfwWindowShouldClose(window)) {
     setup_uniforms(shader, game);
@@ -326,14 +362,14 @@ int main() {
     game.end_time = glfwGetTime();
 
     if (is_frame_passed(game) && !game.game_over) {
-      print_snake_pos(snake_parts, meal);
-      if (ate_meal)
-        meal = spawn_meal(static_cast<int>(game.grid_size), snake_parts);
+//      print_snake_pos(game.snake_parts, game.meal);
+      if (game.ate_meal)
+        game.meal = spawn_meal(static_cast<int>(game.grid_size), game.snake_parts);
 
-      Point p = update_pos(snake_parts[0], game);
-      ate_meal = collided_with_meal(p, meal);
-      move_snake(p, snake_parts, ate_meal);
-      game.game_over = is_of_the_grid(p, static_cast<int>(game.grid_size)) || collided_with_self(snake_parts);
+      Point p = update_pos(game.snake_parts[0], game);
+      game.ate_meal = collided_with_meal(p, game.meal);
+      move_snake(p, game.snake_parts, game.ate_meal);
+      game.game_over = is_of_the_grid(p, static_cast<int>(game.grid_size)) || collided_with_self(game.snake_parts);
       game.start_time = game.end_time;
     }
 
@@ -341,18 +377,31 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     draw_grid(grid_shader, line_vertex_data, should_update_grid(game), static_cast<int>(game.grid_size));
-    draw_snake(snake_parts, shader, vertex_data);
-    if (!ate_meal)
-      draw_meal(shader, vertex_data, meal);
+    draw_snake(game.snake_parts, shader, vertex_data, game);
+    if (!game.ate_meal)
+      draw_meal(shader, vertex_data, game.meal);
+
+    //debug_draw(shader, vertex_data, game);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
 
-//    game.prev_direction = game.direction;
     game.prev_difficulty = game.difficulty;
   }
 
+  ma_device_uninit(&game.device);
+  ma_decoder_uninit(&game.decoder);
   glfwTerminate();
+}
+void debug_draw(const Shader &shader, const VertexData &vertex_data, const GameState &game) {
+  shader.use();
+  shader.set_vec4("in_color", glm::vec4(1.0f));
+  shader.set_mat4("view", game.camera.view);
+  shader.set_mat4("projection", game.camera.projection);
+  shader.set_mat4("model", glm::mat4(1.0f));
+
+  glBindVertexArray(vertex_data.VAO);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 float get_zoom_level(const GameState &g) {
@@ -407,15 +456,15 @@ void process_input(GLFWwindow *window, GameState &state) {
 VertexData init_vertices() {
   VertexData vertex_data;
   vertex_data.vertices = {
-      -0.5f, -0.5f, 0.0f,
-      0.5f, -0.5f, 0.0f,
-      -0.5f, 0.5f, 0.0f,
-      0.5f, 0.5f, 0.0f
+      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
+      -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, // top left
+      0.5f, 0.5f, 0.0f, 1.0f, 1.0f, // top right
+      0.5f, -0.5f, 0.0f, 1.0f, 0.0f // bottom right
   };
 
   vertex_data.indices = {
       0, 1, 2,
-      1, 2, 3
+      2, 3, 0
   };
 
   glGenVertexArrays(1, &vertex_data.VAO);
@@ -430,8 +479,29 @@ VertexData init_vertices() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_data.indices.size() * sizeof(uint), &vertex_data.indices[0],
                GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void *>(NULL));
+  glGenTextures(1, &vertex_data.texture);
+  glBindTexture(GL_TEXTURE_2D, vertex_data.texture);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  int32_t width;
+  int32_t height;
+  int32_t nr_channels;
+  unsigned char *data = stbi_load("../assets/ant.png", &width, &height, &nr_channels, 0);
+  if (!data)
+    std::cerr << "Failed to load texture from ../assets/ant.png" << std::endl;
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  stbi_image_free(data);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(NULL));
   glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
 
   return vertex_data;
 }
@@ -480,40 +550,35 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uin
   (void) pInput;
 }
 
-void play_audio(const char *file_name) {
-  ma_result result;
-  ma_decoder decoder;
-  ma_device_config deviceConfig;
-  ma_device device;
+void play_audio(GameState &game) {
+  if (ma_device_is_started(&game.device)) {
+    ma_device_stop(&game.device);
+    ma_decoder_uninit(&game.decoder);
+  }
 
-  result = ma_decoder_init_file(file_name, NULL, &decoder);
+  ma_result result;
+  result = ma_decoder_init_file(game.song.c_str(), NULL, &game.decoder);
   if (result != MA_SUCCESS) {
     return;
   }
 
-  deviceConfig = ma_device_config_init(ma_device_type_playback);
-  deviceConfig.playback.format = decoder.outputFormat;
-  deviceConfig.playback.channels = decoder.outputChannels;
-  deviceConfig.sampleRate = decoder.outputSampleRate;
-  deviceConfig.dataCallback = data_callback;
-  deviceConfig.pUserData = &decoder;
+  game.device_config = ma_device_config_init(ma_device_type_playback);
+  game.device_config.playback.format = game.decoder.outputFormat;
+  game.device_config.playback.channels = game.decoder.outputChannels;
+  game.device_config.sampleRate = game.decoder.outputSampleRate;
+  game.device_config.dataCallback = data_callback;
+  game.device_config.pUserData = &game.decoder;
 
-  if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+  if (ma_device_init(NULL, &game.device_config, &game.device) != MA_SUCCESS) {
     printf("Failed to open playback device.\n");
-    ma_decoder_uninit(&decoder);
+    ma_decoder_uninit(&game.decoder);
     return;
   }
 
-  if (ma_device_start(&device) != MA_SUCCESS) {
+  if (ma_device_start(&game.device) != MA_SUCCESS) {
     printf("Failed to start playback device.\n");
-    ma_device_uninit(&device);
-    ma_decoder_uninit(&decoder);
+    ma_device_uninit(&game.device);
+    ma_decoder_uninit(&game.decoder);
     return;
   }
-
-  printf("Press Enter to quit...");
-  getchar();
-
-  ma_device_uninit(&device);
-  ma_decoder_uninit(&decoder);
 }
