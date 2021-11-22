@@ -10,5 +10,5 @@ uniform vec4 in_color;
 void main()
 {
     out_color = texture(out_texture, texture_coord);
-//    out_color = in_color;
+    if (out_color.rgb == vec3(0)) discard;
 }
