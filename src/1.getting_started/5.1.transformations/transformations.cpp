@@ -99,7 +99,7 @@ void reset_game(GameState &g) {
 }
 
 void update_difficulty(GameState &g, Difficulty d) {
-  std::cout << "Updating difficulty to " << static_cast<int>(d) << std::endl;
+//  std::cout << "Updating difficulty to " << static_cast<int>(d) << std::endl;
   g.difficulty = d;
   switch (d) {
   case Difficulty::LOW:g.song = "../assets/Greenberg.mp3";
@@ -297,7 +297,7 @@ void draw_snake(const std::deque<Point> &parts,
     model = glm::translate(model, glm::vec3(p.x - 0.5f, p.y - 0.5f, 0.0f));
 //    model = glm::scale(model, glm::vec3(0.99f));
     shader.set_mat4("model", model);
-    shader.set_vec4("in_color", glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
+    shader.set_vec4("in_color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     shader.set_float("in_rotation", glm::radians(game.texture_angle));
     glBindTexture(GL_TEXTURE_2D, vertex_data.texture);
     glBindVertexArray(vertex_data.VAO);
@@ -309,7 +309,7 @@ void draw_snake(const std::deque<Point> &parts,
 void draw_meal(const Shader &shader, const VertexData &vertex_data, const Point &meal) {
   shader.use();
   glBindVertexArray(vertex_data.VAO);
-  shader.set_vec4("in_color", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+  shader.set_vec4("in_color", glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
   shader.set_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(meal.x - 0.5f, meal.y - 0.5f, 0.0f)));
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
@@ -332,6 +332,7 @@ void init_game_state(GameState &state) {
   state.snake_parts = std::deque<Point>(1, {1, 1});
   state.ate_meal = false;
   state.texture_angle = 0.0f;
+  play_audio(state);
 }
 
 bool is_frame_passed(const GameState &state) {
@@ -353,7 +354,6 @@ int main() {
 
   GameState game;
   init_game_state(game);
-//  std::thread audio(play_audio, std::ref(game));
 
   while (!glfwWindowShouldClose(window)) {
     setup_uniforms(shader, game);
