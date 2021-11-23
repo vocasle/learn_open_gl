@@ -277,7 +277,7 @@ void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, uint32
                  GL_DYNAMIC_DRAW);
   }
 
-  glDrawArrays(GL_LINES, 0, vertex_data.vertices.size());
+  glDrawArrays(GL_LINES, 0, vertex_data.vertices.size() / 2);
 }
 
 void print_snake_pos(const std::deque<Point> &snake, const Point &meal) {
