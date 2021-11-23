@@ -553,6 +553,7 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uin
 void play_audio(GameState &game) {
   if (ma_device_is_started(&game.device)) {
     ma_device_stop(&game.device);
+    ma_device_uninit(&game.device);
     ma_decoder_uninit(&game.decoder);
   }
 
