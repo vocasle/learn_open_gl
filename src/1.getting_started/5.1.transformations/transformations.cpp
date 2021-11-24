@@ -310,6 +310,7 @@ void draw_meal(const Shader &shader, const VertexData &vertex_data, const Point 
   shader.use();
   glBindVertexArray(vertex_data.VAO);
   shader.set_vec4("in_color", glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+  shader.set_float("in_rotation", glm::radians(0.0f));
   shader.set_mat4("model", glm::translate(glm::mat4(1.0f), glm::vec3(meal.x - 0.5f, meal.y - 0.5f, 0.0f)));
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
