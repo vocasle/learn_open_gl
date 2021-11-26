@@ -55,7 +55,7 @@ set(1.getting_started
         )
 
 set(2.lighting
-#        1.colors
+        1.colors
 #        2.1.basic_lighting_diffuse
 #        2.2.basic_lighting_specular
 #        3.1.materials
@@ -149,6 +149,7 @@ foreach(CHAPTER ${CHAPTERS})
                 "src/${CHAPTER}/${DEMO}/*.vs"
                 "src/${CHAPTER}/${DEMO}/*.fs"
                 "src/${CHAPTER}/${DEMO}/*.gs"
+                "src/${CHAPTER}/${DEMO}/*.shader"
                 )
 
         file(GLOB ASSETS
