@@ -165,7 +165,7 @@ int main()
     view = glm::translate(view, glm::vec3(1.0f, -1.0f, -5.0f));
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-    GL_CALL(glUseProgram(color_program));
+    GL_CALL(glUseProgram(lighting_program));
     GL_CALL(unsigned int model_loc = glGetUniformLocation(color_program, "model"));
     GL_CALL(unsigned int view_loc = glGetUniformLocation(color_program, "view"));
     GL_CALL(unsigned int projection_loc = glGetUniformLocation(color_program, "projection"));
@@ -206,9 +206,9 @@ int main()
         0, 6, 7
     };
 
-    unsigned int vao = 0;
-    GL_CALL(glGenVertexArrays(1, &vao));
-    GL_CALL(glBindVertexArray(vao));
+    unsigned int object_vao = 0;
+    GL_CALL(glGenVertexArrays(1, &object_vao));
+    GL_CALL(glBindVertexArray(object_vao));
 
     unsigned int vbo = 0;
     GL_CALL(glGenBuffers(1, &vbo));
@@ -223,22 +223,27 @@ int main()
     GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, nullptr));
     GL_CALL(glEnableVertexAttribArray(0));
 
-    double t_start = glfwGetTime();
-    double t_end = 0.0;
+    unsigned int light_vao = 0;
+    GL_CALL(glGenVertexArrays(1, &light_vao));
+    GL_CALL(glBindVertexArray(light_vao));
+    GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+    GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo));
+
+    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, nullptr));
+    GL_CALL(glEnableVertexAttribArray(0));
 
     while (!glfwWindowShouldClose(window)) {
         process_input(window);
-        t_end = glfwGetTime();
 
         GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
-        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+//        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+//        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         GL_CALL(glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model)));
 
-        GL_CALL(glUseProgram(color_program));
-        GL_CALL(glBindVertexArray(vao));
+        GL_CALL(glUseProgram(lighting_program));
+        GL_CALL(glBindVertexArray(light_vao));
         GL_CALL(glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, nullptr));
 
 //        shader.use();
