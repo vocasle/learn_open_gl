@@ -92,7 +92,7 @@ int main()
     });
 
     Shader lighting_shader("lighting.shader");
-    Shader color_shader("color.shader");
+    Shader object_shader("object.shader");
 
     constexpr float vertices[] = {
             -0.5f, -0.5f, 0.5f, // 0
@@ -176,9 +176,11 @@ int main()
         glfwSetWindowShouldClose(window, true);
     }});
 
-    color_shader.use();
-    color_shader.set_mat4("model", object_model);
-    color_shader.set_mat4("projection", projection);
+    object_shader.use();
+    object_shader.set_mat4("model", object_model);
+    object_shader.set_mat4("projection", projection);
+    object_shader.set_vec4("u_object_color", glm::vec4(1.0f, 0.5f, 0.31f, 1.0f));
+    object_shader.set_vec4("u_light_color", glm::vec4(1.0f));
 
     lighting_shader.use();
     lighting_shader.set_mat4("model", light_model);
@@ -195,8 +197,8 @@ int main()
         GL_CALL(glBindVertexArray(light_vao));
         GL_CALL(glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_INT, nullptr));
 
-        color_shader.use();
-        color_shader.set_mat4("view", camera.get_view());
+        object_shader.use();
+        object_shader.set_mat4("view", camera.get_view());
         GL_CALL(glBindVertexArray(object_vao));
         GL_CALL(glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_INT, nullptr));
 
@@ -204,8 +206,9 @@ int main()
         glfwPollEvents();
     }
 
-//    glDeleteVertexArrays(1, &VAO);
-//    glDeleteBuffers(1, &VBO);
+    GL_CALL(glDeleteVertexArrays(1, &object_vao));
+    GL_CALL(glDeleteVertexArrays(1, &light_vao));
+    GL_CALL(glDeleteBuffers(1, &vbo));
 
     glfwTerminate();
 }

@@ -17,10 +17,7 @@ void main()
 
 out vec4 out_color;
 
-uniform vec4 object_color;
-uniform vec4 light_color;
-
 void main()
 {
-    out_color = light_color * object_color;
+    out_color = vec4(1.0f);
 }
