@@ -128,18 +128,27 @@ int main()
     light_model = glm::translate(light_model, glm::vec3(1.2f, 1.0f, 2.0f));
     light_model = glm::scale(light_model, glm::vec3(0.2f));
     const glm::mat4 object_model(1.0f);
-    const glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -10.0f));
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+
+    glm::vec3 camera_pos = glm::vec3(0.0f, 0.0f, 10.0f);
+    glm::vec3 camera_target = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 camera_direction = glm::normalize(camera_pos - camera_target);
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 camera_right = glm::normalize(glm::cross(up, camera_direction));
+    glm::vec3 camera_up = glm::cross(camera_direction, camera_right);
+    glm::mat4 camera_view = glm::lookAt(camera_pos, camera_target, up);
 
     color_shader.use();
     color_shader.set_mat4("model", object_model);
-    color_shader.set_mat4("view", view);
+    color_shader.set_mat4("view", camera_view);
     color_shader.set_mat4("projection", projection);
 
     lighting_shader.use();
     lighting_shader.set_mat4("model", light_model);
-    lighting_shader.set_mat4("view", view);
+    lighting_shader.set_mat4("view", camera_view);
     lighting_shader.set_mat4("projection", projection);
+
+    constexpr float radius = 10.0f;
 
     while (!glfwWindowShouldClose(window)) {
         process_input(window);
@@ -147,15 +156,18 @@ int main()
         GL_CALL(glClearColor(0.2f, 0.3f, 0.3f, 1.0f));
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-//        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//        model = glm::rotate(model, glm::radians(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-//        GL_CALL(glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model)));
+        float cam_x = sin(glfwGetTime()) * radius;
+        float cam_z = cos(glfwGetTime()) * radius;
+        camera_view = glm::lookAt(glm::vec3(cam_x, 4.0f, cam_z),
+                                  camera_target, up);
 
         lighting_shader.use();
+        lighting_shader.set_mat4("view", camera_view);
         GL_CALL(glBindVertexArray(light_vao));
         GL_CALL(glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, nullptr));
 
         color_shader.use();
+        color_shader.set_mat4("view", camera_view);
         GL_CALL(glBindVertexArray(object_vao));
         GL_CALL(glDrawElements(GL_TRIANGLES, 6 * 6, GL_UNSIGNED_INT, nullptr));
 
