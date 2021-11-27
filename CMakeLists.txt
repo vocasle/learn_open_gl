@@ -137,6 +137,8 @@ foreach(CHAPTER ${CHAPTERS})
                 "src/${CHAPTER}/${DEMO}/*.vs"
                 "src/${CHAPTER}/${DEMO}/*.fs"
                 "src/${CHAPTER}/${DEMO}/*.gs"
+                "src/*.h"
+                "src/*.cpp"
                 )
         set(NAME "${CHAPTER}__${DEMO}")
         add_executable(${NAME} ${SOURCE})
