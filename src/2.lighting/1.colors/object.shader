@@ -27,17 +27,30 @@ in vec3 extern_frag_pos;
 uniform vec3 u_object_color;
 uniform vec3 u_light_color;
 uniform vec3 u_light_pos;
+uniform mat3 u_normal_mat;
+uniform vec3 u_camera_pos;
 
 out vec4 out_color;
 
 void main()
 {
-    vec3 norm = normalize(extern_normal);
-    vec3 light_dir = normalize(u_light_pos - extern_frag_pos);
-    float diff = max(dot(norm, light_dir), 0.0);
-    vec3 diffuse = diff * u_light_color;
+    // ambient
     float ambient_strength = 0.1;
-    vec3 ambient = ambient_strength * u_light_color;
-    vec3 resulting_color = (ambient + diffuse) * u_object_color;
-    out_color = vec4(resulting_color, 1.0f);
+    vec3 ambient_component = ambient_strength * u_light_color;
+
+   // diffuse
+   vec3 normal = normalize(u_normal_mat * extern_normal);
+   vec3 light_direction = normalize(u_light_pos - extern_frag_pos);
+   float diffuse = max(dot(normal, light_direction), 0.0);
+   vec3 diffuse_component = diffuse * u_light_color;
+
+   // specular
+   float specular_strength = 0.5;
+   vec3 camera_direction = normalize(-u_camera_pos + extern_frag_pos);
+   vec3 reflected_ray = reflect(light_direction, normal);
+   float specular = pow(max(dot(camera_direction, reflected_ray), 0.0), 32);
+   vec3 specular_component = specular_strength * specular * u_light_color;
+
+    vec3 result_color = (ambient_component + diffuse_component + specular_component) * u_object_color;
+    out_color = vec4(result_color, 1.0);
 }

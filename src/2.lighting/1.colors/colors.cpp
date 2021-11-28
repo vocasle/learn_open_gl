@@ -74,7 +74,8 @@ int main()
         return -1;
     }
 
-    Camera camera(1.0f, glm::vec3(0.0f, 0.0f, 3.0f));
+    const glm::vec3 camera_pos = glm::vec3(0.0f, 0.0f, 3.0f);
+    Camera camera(1.0f, camera_pos);
     InputManager input_manager;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &camera);
@@ -184,16 +185,31 @@ int main()
 
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), win_width/static_cast<float>(win_height), 0.1f,
             100.0f);
-    const glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+    glm::vec3 light_pos(0.0f, 0.0f, 0.0f);
     glm::mat4 light_model(1.0f);
-    light_model = glm::translate(light_model, light_pos);
-    light_model = glm::scale(light_model, glm::vec3(0.2f));
+    //   light_model = glm::translate(light_model, light_pos);
+//    light_model = glm::scale(light_model, glm::vec3(0.2f));
+    const glm::mat3 normal_matrix = glm::transpose(glm::inverse(light_model));
+
+    double begin = glfwGetTime();
+    double end = 0.0;
+    double time_span = 0.0;
 
     while (!glfwWindowShouldClose(window)) {
         input_manager.process_keyboard_input(window);
 
         GL_CALL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+        end = glfwGetTime();
+        time_span = end-begin;
+
+        light_pos = glm::vec3(
+                cos(time_span) * 2.0f,
+                0.0f,
+                sin(time_span) * 2.0f);
+        light_model = glm::translate(glm::mat4(1.0f), light_pos);
+        light_model = glm::scale(light_model, glm::vec3(0.2f));
 
         object_shader.use();
         object_shader.set_mat4("model", glm::mat4(1.0f));
@@ -202,6 +218,8 @@ int main()
         object_shader.set_vec3("u_object_color", glm::vec3(1.0f, 0.5f, 0.31f));
         object_shader.set_vec3("u_light_color", glm::vec3(1.0f));
         object_shader.set_vec3("u_light_pos", light_pos);
+        object_shader.set_mat3("u_normal_mat", normal_matrix);
+        object_shader.set_vec3("u_camera_pos", camera_pos);
         GL_CALL(glBindVertexArray(object_vao));
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
