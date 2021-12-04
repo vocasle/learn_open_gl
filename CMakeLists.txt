@@ -5,15 +5,14 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
-find_package(GLFW3 REQUIRED)
-message(STATUS "Found GLFW3 in ${GLFW3_INCLUDE_DIR}")
-find_package(GLM REQUIRED)
-message(STATUS "GLM included at ${GLM_INCLUDE_DIR}")
+set(LIBS glfw glm glad stb_image minaudio)
 
-set(LIBS ${GLFW3_LIBRARY} ${GLM_LIBRARY} GL glad dl stb_image minaudio)
-
+if (!WIN32)
 find_package(OpenGL REQUIRED)
 add_definitions(${OPENGL_DEFINITIONS})
+list(APPEND LIBS GL)
+list(APPEND LIBS dl)
+endif()
 
 add_subdirectory(thirdparties)
 
