@@ -137,7 +137,7 @@ void Shader::set_mat4(const std::string &name, const glm::mat4 &mat) const
     GL_CALL(glUniformMatrix4fv(glGetUniformLocation(program_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat)));
 }
 
-uint Shader::get_program() const
+unsigned int Shader::get_program() const
 {
     return program_id;
 }

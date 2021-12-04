@@ -20,12 +20,12 @@
 #include "stb_image.h"
 
 struct VertexData {
-  uint VAO = 0;
-  uint VBO = 0;
-  uint EBO = 0;
-  uint texture = 0;
+  unsigned int VAO = 0;
+  unsigned int VBO = 0;
+  unsigned int EBO = 0;
+  unsigned int texture = 0;
   std::vector<float> vertices;
-  std::vector<uint> indices;
+  std::vector<unsigned int> indices;
 };
 
 enum class Direction {
@@ -36,7 +36,7 @@ enum class Difficulty {
   LOW, MEDIUM, HIGH
 };
 
-enum class GridSize : uint8_t {
+enum class GridSize : unsigned int8_t {
   SMALL = 8, MEDIUM = 16, BIG = 32
 };
 
@@ -224,7 +224,7 @@ Point spawn_meal(int grid_size, const std::deque<Point> &snake_parts) {
   return {x, y};
 }
 
-std::vector<float> generate_grid(uint32_t max_grid_size) {
+std::vector<float> generate_grid(unsigned int32_t max_grid_size) {
   const float offset = max_grid_size / 2.0f;
   std::vector<float> vertices;
   vertices.reserve(max_grid_size * 4 * 2);
@@ -264,7 +264,7 @@ VertexData init_grid_vertices() {
   return vertex_data;
 }
 
-void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, uint32_t grid_size) {
+void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, unsigned int32_t grid_size) {
   shader.use();
   shader.set_mat4("model", glm::mat4(1.0f));
   glBindVertexArray(vertex_data.VAO);
@@ -477,7 +477,7 @@ VertexData init_vertices() {
 
   glGenBuffers(1, &vertex_data.EBO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_data.EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_data.indices.size() * sizeof(uint), &vertex_data.indices[0],
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, vertex_data.indices.size() * sizeof(unsigned int), &vertex_data.indices[0],
                GL_STATIC_DRAW);
 
   glGenTextures(1, &vertex_data.texture);
@@ -534,7 +534,7 @@ GLFWwindow *init_glfw() {
   return window;
 }
 
-void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uint32 frameCount) {
+void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_unsigned int32 frameCount) {
   ma_bool32 isLooping = MA_TRUE;
 
   ma_decoder *pDecoder = (ma_decoder *) pDevice->pUserData;

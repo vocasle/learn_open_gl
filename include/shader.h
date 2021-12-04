@@ -11,7 +11,6 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <concepts>
 
 #include <glm/glm.hpp>
 
@@ -27,10 +26,10 @@ public:
     void set_vec3(const std::string &name, const glm::vec3 &vec) const;
     void set_vec4(const std::string &name, const glm::vec4 &vec) const;
     void set_mat4(const std::string &name, const glm::mat4 &mat) const;
-    uint get_program() const;
+    unsigned int get_program() const;
 
 private:
-    uint program_id;
+    unsigned int program_id;
 };
 
 
