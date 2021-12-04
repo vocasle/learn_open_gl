@@ -8,6 +8,9 @@
 #include <string>
 #include <glm/vec3.hpp>
 
+#include "GLFW/glfw3.h"
+
+
 void gl_clear_error();
 
 bool gl_log_call(const std::string& function_name, const std::string& filename, unsigned int line);
@@ -24,5 +27,9 @@ bool gl_log_call(const std::string& function_name, const std::string& filename, 
     ASSERT(gl_log_call(#x, __FILE__, __LINE__))
 
 glm::vec3 calc_normal(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c);
+
+void framebuffer_size_callback(GLFWwindow * window, int width, int height);
+
+GLFWwindow* init_gl_context(int width, int height);
 
 #endif //LEARN_OPEN_GL_INCLUDE_UTILITY_H
