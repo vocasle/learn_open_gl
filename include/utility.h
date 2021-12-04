@@ -5,16 +5,18 @@
 #ifndef LEARN_OPEN_GL_INCLUDE_UTILITY_H
 #define LEARN_OPEN_GL_INCLUDE_UTILITY_H
 
+#include <string>
 #include <glm/vec3.hpp>
+
 void gl_clear_error();
 
 bool gl_log_call(const std::string& function_name, const std::string& filename, unsigned int line);
 
 #ifdef _WIN32
-#define ASSERT(x) if (!(x)) __debugbreak();
+#define ASSERT(x) if (!(x)) __debugbreak()
 #else
 #include <csignal>
-#define ASSERT(x) if (!(x)) raise(SIGTRAP);
+#define ASSERT(x) if (!(x)) raise(SIGTRAP)
 #endif
 
 #define GL_CALL(x) gl_clear_error(); \
