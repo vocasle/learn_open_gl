@@ -29,7 +29,7 @@ void VertexArray::add_buffer(const VertexBuffer& vb, const VertexBufferLayout& v
 	for (size_t i = 0; const auto &element : vbl.get_elements())
 	{
 		GL_CALL(glVertexAttribPointer(i, element.count, element.type, element.normalized, vbl.get_stride(), reinterpret_cast<void*>(offset)));
-		GL_CALL(glEnableVertexAttribArray(0));
+		GL_CALL(glEnableVertexAttribArray(i));
 		offset += element.count * VertexBufferElement::get_type_size(element.type);
 		++i;
 	}
