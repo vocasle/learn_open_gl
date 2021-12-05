@@ -14,54 +14,8 @@
 #include "utility.h"
 #include "input_manager.h"
 #include "vertex_buffer.h"
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
-
-void process_input(GLFWwindow* window, Camera& camera)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.update_pos(Direction::FORWARD, 0);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.update_pos(Direction::BACKWARD, 0);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.update_pos(Direction::LEFT, 0);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.update_pos(Direction::RIGHT, 0);
-}
-
-GLFWwindow* init_gl_context(int width, int height)
-{
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return nullptr;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(width, height, "LearnOpenGL", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return nullptr;
-    }
-    glfwMakeContextCurrent(window);
-
-    if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        return nullptr;
-    }
-
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    return window;
-}
+#include "vertex_array.h"
+#include "vertex_buffer_layout.h"
 
 int main()
 {
@@ -140,29 +94,16 @@ int main()
             -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
             -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
     };
+    VertexBuffer vb(vertices.data(), sizeof(float) * vertices.size());
+    VertexArray object_va;
+    VertexBufferLayout vbl;
+    vbl.add_element<float>(3);
+    vbl.add_element<float>(3);
+    object_va.add_buffer(vb, vbl);
 
-    VertexBuffer vb(reinterpret_cast<const void*>(vertices.data()), sizeof(float) * vertices.size());
-
-    unsigned int object_vao = 0;
-    GL_CALL(glGenVertexArrays(1, &object_vao));
-    GL_CALL(glBindVertexArray(object_vao));
-
-    vb.bind();
-
-    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr));
-    GL_CALL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, reinterpret_cast<void*>(3 * sizeof(float))));
-    GL_CALL(glEnableVertexAttribArray(0));
-    GL_CALL(glEnableVertexAttribArray(1));
-
-    unsigned int light_vao = 0;
-    GL_CALL(glGenVertexArrays(1, &light_vao));
-    GL_CALL(glBindVertexArray(light_vao));
-    vb.bind();
-
-    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr));
-    GL_CALL(glEnableVertexAttribArray(0));
-
-    GL_CALL(glEnable(GL_DEPTH_TEST));
+    VertexArray light_va;
+    VertexBufferLayout light_vbl;
+    light_va.add_buffer(vb, vbl);
 
     input_manager.register_listener({ GLFW_KEY_W, KeyState::PRESSED, [&camera](double delta_time) {
         camera.update_pos(Direction::FORWARD, delta_time);
@@ -184,13 +125,13 @@ int main()
         100.0f);
     glm::vec3 light_pos(0.0f, 0.0f, 0.0f);
     glm::mat4 light_model(1.0f);
-    //   light_model = glm::translate(light_model, light_pos);
-//    light_model = glm::scale(light_model, glm::vec3(0.2f));
     const glm::mat3 normal_matrix = glm::transpose(glm::inverse(light_model));
 
     double begin = glfwGetTime();
     double end = 0.0;
     double time_span = 0.0;
+
+    GL_CALL(glEnable(GL_DEPTH_TEST));
 
     while (!glfwWindowShouldClose(window)) {
         input_manager.process_keyboard_input(window);
@@ -202,9 +143,9 @@ int main()
         time_span = end - begin;
 
         light_pos = glm::vec3(
-            cos(time_span) * 2.0f,
+            cos(time_span) * 2.0,
             0.0f,
-            sin(time_span) * 2.0f);
+            sin(time_span) * 2.0);
         light_model = glm::translate(glm::mat4(1.0f), light_pos);
         light_model = glm::scale(light_model, glm::vec3(0.2f));
 
@@ -217,23 +158,19 @@ int main()
         object_shader.set_vec3("u_light_pos", light_pos);
         object_shader.set_mat3("u_normal_mat", normal_matrix);
         object_shader.set_vec3("u_camera_pos", camera_pos);
-        GL_CALL(glBindVertexArray(object_vao));
+        object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         lighting_shader.use();
         lighting_shader.set_mat4("model", light_model);
         lighting_shader.set_mat4("view", camera.get_view());
         lighting_shader.set_mat4("projection", projection);
-        GL_CALL(glBindVertexArray(light_vao));
+        light_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-    }
+    }    
 
-    GL_CALL(glDeleteVertexArrays(1, &object_vao));
-    GL_CALL(glDeleteVertexArrays(1, &light_vao));
-    
-
-    glfwTerminate();
+    //glfwTerminate();
 }
