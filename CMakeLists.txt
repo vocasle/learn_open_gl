@@ -154,18 +154,15 @@ foreach(CHAPTER ${CHAPTERS})
                 "src/${CHAPTER}/${DEMO}/*.shader"
                 )
 
-        file(GLOB ASSETS
-                "assets/*.jpg"
-                "assets/*.png"
-                "assets/*.mp3"
-                )
+        foreach(SHADER ${SHADERS})
+            add_custom_command(
+                TARGET ${NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy ${SHADER} ${CMAKE_BINARY_DIR}/${CHAPTER}
+            )
+        endforeach()
 
         foreach(ASSET ${ASSETS})
             file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/assets)
-        endforeach()
-
-        foreach(SHADER ${SHADERS})
-                file(COPY ${SHADER} DESTINATION ${CMAKE_BINARY_DIR}/${CHAPTER})
         endforeach()
     endforeach()
 endforeach()
