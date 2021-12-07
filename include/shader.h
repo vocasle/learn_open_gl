@@ -16,7 +16,7 @@
 
 class Shader {
 public:
-    Shader(const std::string &path);
+    Shader(const std::string& vertex_path, const std::string& pixel_path);
     ~Shader();
     void use() const;
     void set_bool(const std::string &name, bool value) const;

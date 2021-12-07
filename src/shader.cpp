@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glad/glad.h>
 
 #include "shader.h"
 #include "utility.h"
@@ -13,45 +14,43 @@
 struct ShaderSource {
     std::string vertex;
     std::string fragment;
+    std::string vertex_file_path;
+    std::string fragment_file_path;
 };
 
-static ShaderSource load_shader_source(const std::string& filename)
+static ShaderSource load_shader_source(const std::string& vert_path,
+                                        const std::string& frag_path)
 {
-    enum class ShaderType {
-        NONE = -1, VERTEX = 0, FRAGMENT = 1
-    };
-
-    std::ifstream file(filename);
+    std::ifstream vert_file(vert_path);
+    std::ifstream frag_file(frag_path);
     std::string line;
     std::ostringstream ss[2];
-    ShaderType type = ShaderType::NONE;
 
-    while (std::getline(file, line)) {
-        if (line.find("#shader")!=std::string::npos) {
-            if (line.find("vertex")!=std::string::npos)
-                type = ShaderType::VERTEX;
-            else if (line.find("fragment")!=std::string::npos)
-                type = ShaderType::FRAGMENT;
-        }
-        else {
-            ss[static_cast<int>(type)] << line << '\n';
-        }
-    }
-    return {ss[0].str(), ss[1].str()};
+    while (std::getline(vert_file, line))
+        ss[0] << line << '\n';
+
+    while (std::getline(frag_file, line))
+        ss[1] << line << '\n';
+
+    return {ss[0].str(), ss[1].str(), vert_path, frag_path};
 }
 
-unsigned int compile_shader(GLenum shader_type, const std::string& source)
+unsigned int compile_shader(GLenum shader_type, const std::string& source,
+    const std::string& source_file)
 {
     unsigned int shader = glCreateShader(shader_type);
     const char* src = source.c_str();
     GL_CALL(glShaderSource(shader, 1, &src, nullptr));
     GL_CALL(glCompileShader(shader));
     int success;
-    char info_log[512];
+    char info_log[1024];
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(shader, 512, nullptr, info_log);
-        std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
+        glGetShaderInfoLog(shader, 1024, nullptr, info_log);
+        std::cerr << "ERROR::SHADER::COMPILATION_FAILED "
+            << source_file << '\n'
+            << info_log 
+            << std::endl;
         return 0;
     }
     return shader;
@@ -80,13 +79,13 @@ unsigned int compile_program(unsigned int vertex_shader, unsigned int fragment_s
 
 static unsigned int create_program(const ShaderSource& ss)
 {
-    return compile_program(compile_shader(GL_VERTEX_SHADER, ss.vertex),
-            compile_shader(GL_FRAGMENT_SHADER, ss.fragment));
+    return compile_program(compile_shader(GL_VERTEX_SHADER, ss.vertex, ss.vertex_file_path),
+            compile_shader(GL_FRAGMENT_SHADER, ss.fragment, ss.fragment_file_path));
 }
 
-Shader::Shader(const std::string& path)
+Shader::Shader(const std::string& vertex_path, const std::string& pixel_path)
 {
-    program_id = create_program(load_shader_source(path));
+    program_id = create_program(load_shader_source(vertex_path, pixel_path));
 }
 
 void Shader::use() const
