@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <vector>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -12,21 +13,20 @@
 #include "camera.h"
 #include "shader.h"
 #include "utility.h"
-#include "input_manager.h"
 
-void process_input(GLFWwindow* window, Camera& camera)
+void process_input(GLFWwindow *window, Camera &camera, double delta_time)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE)==GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 
     if (glfwGetKey(window, GLFW_KEY_W)==GLFW_PRESS)
-        camera.update_pos(Direction::FORWARD, 0);
+        camera.update_pos(Direction::FORWARD, delta_time);
     if (glfwGetKey(window, GLFW_KEY_S)==GLFW_PRESS)
-        camera.update_pos(Direction::BACKWARD, 0);
+        camera.update_pos(Direction::BACKWARD, delta_time);
     if (glfwGetKey(window, GLFW_KEY_A)==GLFW_PRESS)
-        camera.update_pos(Direction::LEFT, 0);
+        camera.update_pos(Direction::LEFT, delta_time);
     if (glfwGetKey(window, GLFW_KEY_D)==GLFW_PRESS)
-        camera.update_pos(Direction::RIGHT, 0);
+        camera.update_pos(Direction::RIGHT, delta_time);
 }
 
 int main()
@@ -41,7 +41,6 @@ int main()
 
     const glm::vec3 camera_pos = glm::vec3(0.0f, 0.0f, 3.0f);
     Camera camera(1.0f, camera_pos);
-    InputManager input_manager;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowUserPointer(window, &camera);
     glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
@@ -132,22 +131,6 @@ int main()
 
     GL_CALL(glEnable(GL_DEPTH_TEST));
 
-    input_manager.register_listener({GLFW_KEY_W, KeyState::PRESSED, [&camera](double delta_time) {
-        camera.update_pos(Direction::FORWARD, delta_time);
-    }});
-    input_manager.register_listener({GLFW_KEY_S, KeyState::PRESSED, [&camera](double delta_time) {
-        camera.update_pos(Direction::BACKWARD, delta_time);
-    }});
-    input_manager.register_listener({GLFW_KEY_A, KeyState::PRESSED, [&camera](double delta_time) {
-        camera.update_pos(Direction::LEFT, delta_time);
-    }});
-    input_manager.register_listener({GLFW_KEY_D, KeyState::PRESSED, [&camera](double delta_time) {
-        camera.update_pos(Direction::RIGHT, delta_time);
-    }});
-    input_manager.register_listener({GLFW_KEY_ESCAPE, KeyState::PRESSED, [window](double delta_time) {
-        glfwSetWindowShouldClose(window, true);
-    }});
-
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), win_width/static_cast<float>(win_height), 0.1f,
                                                   100.0f);
     glm::vec3 light_pos(0.0f, 0.0f, 0.0f);
@@ -159,20 +142,23 @@ int main()
     double begin = glfwGetTime();
     double end = 0.0;
     double time_span = 0.0;
+    float angle = 1.0f;
 
     while (!glfwWindowShouldClose(window)) {
-        input_manager.process_keyboard_input(window);
+        end = glfwGetTime();
+        time_span = end-begin;
+        begin = end;
+        process_input(window, camera, time_span);
+        angle += static_cast<float>(time_span);
 
         GL_CALL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        end = glfwGetTime();
-        time_span = end-begin;
 
         light_pos = glm::vec3(
-                cos(time_span) * 2.0f,
+                cos(angle) * 2.0f,
                 0.0f,
-                sin(time_span) * 2.0f);
+                sin(angle) * 2.0f);
         light_model = glm::translate(glm::mat4(1.0f), light_pos);
         light_model = glm::scale(light_model, glm::vec3(0.2f));
 
@@ -202,6 +188,4 @@ int main()
     GL_CALL(glDeleteVertexArrays(1, &object_vao));
     GL_CALL(glDeleteVertexArrays(1, &light_vao));
     GL_CALL(glDeleteBuffers(1, &vbo));
-
-    glfwTerminate();
 }
