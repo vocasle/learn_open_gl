@@ -13,6 +13,9 @@
 #include "camera.h"
 #include "shader.h"
 #include "utility.h"
+#include "vertex_array.h"
+#include "vertex_buffer.h"
+#include "vertex_buffer_layout.h"
 
 void process_input(GLFWwindow *window, Camera &camera, double delta_time)
 {
@@ -110,11 +113,9 @@ int main()
     GL_CALL(glGenVertexArrays(1, &object_vao));
     GL_CALL(glBindVertexArray(object_vao));
 
-    unsigned int vbo = 0;
-    GL_CALL(glGenBuffers(1, &vbo));
-    GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-    GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), &vertices[0],
-                         GL_STATIC_DRAW));
+
+    VertexBuffer vb(vertices.data(), sizeof(float) * vertices.size());
+    vb.bind();
 
     GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr));
     GL_CALL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, reinterpret_cast<void*>(3*sizeof(float))));
@@ -124,7 +125,7 @@ int main()
     unsigned int light_vao = 0;
     GL_CALL(glGenVertexArrays(1, &light_vao));
     GL_CALL(glBindVertexArray(light_vao));
-    GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+    vb.bind();
 
     GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr));
     GL_CALL(glEnableVertexAttribArray(0));
@@ -187,5 +188,4 @@ int main()
 
     GL_CALL(glDeleteVertexArrays(1, &object_vao));
     GL_CALL(glDeleteVertexArrays(1, &light_vao));
-    GL_CALL(glDeleteBuffers(1, &vbo));
 }
