@@ -3,23 +3,16 @@
 //
 
 #include <iostream>
-#include <csignal>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include "camera.h"
 #include "shader.h"
 #include "utility.h"
 #include "input_manager.h"
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
 
 void process_input(GLFWwindow* window, Camera& camera)
 {
@@ -34,34 +27,6 @@ void process_input(GLFWwindow* window, Camera& camera)
         camera.update_pos(Direction::LEFT, 0);
     if (glfwGetKey(window, GLFW_KEY_D)==GLFW_PRESS)
         camera.update_pos(Direction::RIGHT, 0);
-}
-
-GLFWwindow* init_gl_context(int width, int height)
-{
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return nullptr;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(width, height, "LearnOpenGL", nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        return nullptr;
-    }
-    glfwMakeContextCurrent(window);
-
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        return nullptr;
-    }
-
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-    return window;
 }
 
 int main()
@@ -95,8 +60,8 @@ int main()
         }
     });
 
-    Shader lighting_shader("lighting.shader");
-    Shader object_shader("object.shader");
+    Shader lighting_shader("lighting.vert", "lighting.frag");
+    Shader object_shader("object.vert", "object.frag");
 
     const std::vector<float> vertices = {
             -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
@@ -150,9 +115,9 @@ int main()
     GL_CALL(glGenBuffers(1, &vbo));
     GL_CALL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
     GL_CALL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertices.size(), &vertices[0],
-            GL_STATIC_DRAW))
+            GL_STATIC_DRAW));
 
-    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr))
+    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr));
     GL_CALL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, reinterpret_cast<void*>(3*sizeof(float))));
     GL_CALL(glEnableVertexAttribArray(0));
     GL_CALL(glEnableVertexAttribArray(1));

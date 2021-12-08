@@ -48,8 +48,8 @@ int main()
         }
         });
 
-    Shader lighting_shader("2.2.lighting.shader");
-    Shader object_shader("2.2.object.shader");
+    Shader lighting_shader("2.2.lighting.vert", "2.2.lighting.frag");
+    Shader object_shader("2.2.object.vert", "2.2.object.frag");
 
     const std::vector<float> vertices = {
             -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,

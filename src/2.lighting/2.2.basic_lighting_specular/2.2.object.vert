@@ -1,4 +1,3 @@
-#shader vertex
 #version 330 core
 
 layout (location = 0) in vec4 in_position;
@@ -40,16 +39,4 @@ void main()
 
 
     gl_Position = projection * view * model * in_position;
-}
-
-#shader fragment
-#version 330 core
-
-in vec3 extern_color;
-
-out vec4 out_color;
-
-void main()
-{
-    out_color = vec4(extern_color, 1.0);
 }
