@@ -109,26 +109,15 @@ int main()
             -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f
     };
 
-    unsigned int object_vao = 0;
-    GL_CALL(glGenVertexArrays(1, &object_vao));
-    GL_CALL(glBindVertexArray(object_vao));
-
-
+    VertexArray object_va;
     VertexBuffer vb(vertices.data(), sizeof(float) * vertices.size());
-    vb.bind();
+    VertexBufferLayout vbl;
+    vbl.add_element<float>(3);
+    vbl.add_element<float>(3);
+    object_va.add_buffer(vb, vbl);
 
-    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr));
-    GL_CALL(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, reinterpret_cast<void*>(3*sizeof(float))));
-    GL_CALL(glEnableVertexAttribArray(0));
-    GL_CALL(glEnableVertexAttribArray(1));
-
-    unsigned int light_vao = 0;
-    GL_CALL(glGenVertexArrays(1, &light_vao));
-    GL_CALL(glBindVertexArray(light_vao));
-    vb.bind();
-
-    GL_CALL(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float)*6, nullptr));
-    GL_CALL(glEnableVertexAttribArray(0));
+    VertexArray light_va;
+    light_va.add_buffer(vb, vbl);
 
     GL_CALL(glEnable(GL_DEPTH_TEST));
 
@@ -172,20 +161,17 @@ int main()
         object_shader.set_vec3("u_light_pos", light_pos);
         object_shader.set_mat3("u_normal_mat", normal_matrix);
         object_shader.set_vec3("u_camera_pos", camera_pos);
-        GL_CALL(glBindVertexArray(object_vao));
+        object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         lighting_shader.use();
         lighting_shader.set_mat4("model", light_model);
         lighting_shader.set_mat4("view", camera.get_view());
         lighting_shader.set_mat4("projection", projection);
-        GL_CALL(glBindVertexArray(light_vao));
+        light_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    GL_CALL(glDeleteVertexArrays(1, &object_vao));
-    GL_CALL(glDeleteVertexArrays(1, &light_vao));
 }
