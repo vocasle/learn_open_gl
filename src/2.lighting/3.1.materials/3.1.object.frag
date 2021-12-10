@@ -20,7 +20,6 @@ in vec3 extern_frag_pos;
 
 uniform Material u_material;
 uniform Light u_light;
-uniform vec3 u_object_color;
 uniform mat3 u_normal_mat;
 uniform vec3 u_camera_pos;
 
@@ -43,6 +42,6 @@ void main()
    float specular = pow(max(dot(camera_direction, reflected_ray), 0.0), u_material.shininess);
    vec3 specular_component =  u_light.specular * (specular * u_material.specular);
 
-    vec3 result_color = (ambient_component + diffuse_component + specular_component) * u_object_color;
+    vec3 result_color = ambient_component + diffuse_component + specular_component;
     out_color = vec4(result_color, 1.0);
 }

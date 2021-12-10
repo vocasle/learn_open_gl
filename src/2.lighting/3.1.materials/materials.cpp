@@ -32,6 +32,20 @@ void process_input(GLFWwindow *window, Camera &camera, double delta_time)
         camera.update_pos(Direction::RIGHT, delta_time);
 }
 
+struct Light {
+    glm::vec3 position;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
+struct Material {
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    float shininess;
+};
+
 int main()
 {
     constexpr int win_width = 800;
@@ -134,6 +148,23 @@ int main()
     double time_span = 0.0;
     float angle = 1.0f;
 
+    Light light{ light_pos, glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(1.0f) };
+    Material bronze{
+        glm::vec3(0.2125f, 0.1275f, 0.054f),
+        glm::vec3(0.714f, 0.4284f, 0.18144f),
+        glm::vec3(0.393548f, 0.271906f, 0.166721f),
+        0.2f * 128.0f
+    };
+
+    Material chrome{
+        glm::vec3(0.25f),
+        glm::vec3(0.4f),
+        glm::vec3(0.774597f),
+        0.6f * 128.0f
+    };
+
+    Material m = chrome;
+
     while (!glfwWindowShouldClose(window)) {
         end = glfwGetTime();
         time_span = end-begin;
@@ -152,27 +183,28 @@ int main()
         //light_model = glm::translate(glm::mat4(1.0f), light_pos);
         //light_model = glm::scale(light_model, glm::vec3(0.2f));
 
-        const glm::vec3 light_color(sin(glfwGetTime() * 2.0f),
-            sin(glfwGetTime() * 0.7f),
-            sin(glfwGetTime() * 1.3f));
-        const glm::vec3 diffuse_color = light_color * glm::vec3(0.5f);
-        const glm::vec3 ambient_color = light_color * glm::vec3(0.2f);
+        //const glm::vec3 light_color(sin(glfwGetTime() * 2.0f),
+        //    sin(glfwGetTime() * 0.7f),
+        //    sin(glfwGetTime() * 1.3f));
+        //const glm::vec3 diffuse_color = light_color * glm::vec3(0.5f);
+        //const glm::vec3 ambient_color = light_color * glm::vec3(0.2f);
+        //light.diffuse = diffuse_color;
+        //light.ambient = ambient_color;
 
         object_shader.use();
         object_shader.set_mat4("model", glm::mat4(1.0f));
         object_shader.set_mat4("view", camera.get_view());
         object_shader.set_mat4("projection", projection);
-        object_shader.set_vec3("u_object_color", glm::vec3(1.0f, 0.5f, 0.31f));
         object_shader.set_mat3("u_normal_mat", normal_matrix);
         object_shader.set_vec3("u_camera_pos", camera_pos);
-        object_shader.set_vec3("u_material.ambient", {1.0f, 0.5f, 0.31f});
-        object_shader.set_vec3("u_material.diffuse", {1.0f, 0.5f, 0.31f});
-        object_shader.set_vec3("u_material.specular", {0.5f, 0.5f, 0.5f});
-        object_shader.set_float("u_material.shininess", 32.0f);
+        object_shader.set_vec3("u_material.ambient", m.ambient);
+        object_shader.set_vec3("u_material.diffuse", m.diffuse);
+        object_shader.set_vec3("u_material.specular", m.specular);
+        object_shader.set_float("u_material.shininess", m.shininess);
         object_shader.set_vec3("u_light.position", light_pos);
-        object_shader.set_vec3("u_light.ambient", ambient_color);
-        object_shader.set_vec3("u_light.diffuse", diffuse_color);
-        object_shader.set_vec3("u_light.specular", { 1.0f, 1.0f, 1.0f });
+        object_shader.set_vec3("u_light.ambient", light.ambient);
+        object_shader.set_vec3("u_light.diffuse", light.diffuse);
+        object_shader.set_vec3("u_light.specular", light.specular);
         object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
@@ -181,9 +213,9 @@ int main()
         lighting_shader.set_mat4("view", camera.get_view());
         lighting_shader.set_mat4("projection", projection);
         lighting_shader.set_vec3("u_light.position", light_pos);
-        lighting_shader.set_vec3("u_light.ambient", ambient_color);
-        lighting_shader.set_vec3("u_light.diffuse", diffuse_color);
-        lighting_shader.set_vec3("u_light.specular", { 1.0f, 1.0f, 1.0f });
+        lighting_shader.set_vec3("u_light.ambient", light.ambient);
+        lighting_shader.set_vec3("u_light.diffuse", light.diffuse);
+        lighting_shader.set_vec3("u_light.specular", light.specular);
 
         light_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
