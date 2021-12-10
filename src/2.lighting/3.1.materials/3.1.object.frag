@@ -5,7 +5,7 @@ struct Material {
     vec3 diffuse;
     vec3 specular;
     float shininess;
-}
+};
 
 in vec3 extern_normal;
 in vec3 extern_frag_pos;

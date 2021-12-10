@@ -62,8 +62,8 @@ int main()
         }
     });
 
-    Shader lighting_shader("lighting.vert", "lighting.frag");
-    Shader object_shader("object.vert", "object.frag");
+    Shader lighting_shader("3.1.lighting.vert", "3.1.lighting.frag");
+    Shader object_shader("3.1.object.vert", "3.1.object.frag");
 
     const std::vector<float> vertices = {
             -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,
