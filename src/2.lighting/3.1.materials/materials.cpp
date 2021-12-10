@@ -123,10 +123,10 @@ int main()
 
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), win_width/static_cast<float>(win_height), 0.1f,
                                                   100.0f);
-    glm::vec3 light_pos(0.0f, 0.0f, 0.0f);
+    glm::vec3 light_pos(0.5f, 1.2f, 2.0f);
     glm::mat4 light_model(1.0f);
-    //   light_model = glm::translate(light_model, light_pos);
-//    light_model = glm::scale(light_model, glm::vec3(0.2f));
+    light_model = glm::translate(light_model, light_pos);
+    light_model = glm::scale(light_model, glm::vec3(0.2f));
     const glm::mat3 normal_matrix = glm::transpose(glm::inverse(light_model));
 
     double begin = glfwGetTime();
@@ -145,12 +145,18 @@ int main()
         GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 
-        light_pos = glm::vec3(
-                cos(angle) * 2.0f,
-                0.0f,
-                sin(angle) * 2.0f);
-        light_model = glm::translate(glm::mat4(1.0f), light_pos);
-        light_model = glm::scale(light_model, glm::vec3(0.2f));
+        //light_pos = glm::vec3(
+                //cos(angle) * 2.0f,
+                //0.0f,
+                //sin(angle) * 2.0f);
+        //light_model = glm::translate(glm::mat4(1.0f), light_pos);
+        //light_model = glm::scale(light_model, glm::vec3(0.2f));
+
+        const glm::vec3 light_color(sin(glfwGetTime() * 2.0f),
+            sin(glfwGetTime() * 0.7f),
+            sin(glfwGetTime() * 1.3f));
+        const glm::vec3 diffuse_color = light_color * glm::vec3(0.5f);
+        const glm::vec3 ambient_color = light_color * glm::vec3(0.2f);
 
         object_shader.use();
         object_shader.set_mat4("model", glm::mat4(1.0f));
@@ -164,8 +170,8 @@ int main()
         object_shader.set_vec3("u_material.specular", {0.5f, 0.5f, 0.5f});
         object_shader.set_float("u_material.shininess", 32.0f);
         object_shader.set_vec3("u_light.position", light_pos);
-        object_shader.set_vec3("u_light.ambient", { 0.2f, 0.2f, 0.2f });
-        object_shader.set_vec3("u_light.diffuse", { 0.5f, 0.5f, 0.5f });
+        object_shader.set_vec3("u_light.ambient", ambient_color);
+        object_shader.set_vec3("u_light.diffuse", diffuse_color);
         object_shader.set_vec3("u_light.specular", { 1.0f, 1.0f, 1.0f });
         object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
@@ -174,6 +180,11 @@ int main()
         lighting_shader.set_mat4("model", light_model);
         lighting_shader.set_mat4("view", camera.get_view());
         lighting_shader.set_mat4("projection", projection);
+        lighting_shader.set_vec3("u_light.position", light_pos);
+        lighting_shader.set_vec3("u_light.ambient", ambient_color);
+        lighting_shader.set_vec3("u_light.diffuse", diffuse_color);
+        lighting_shader.set_vec3("u_light.specular", { 1.0f, 1.0f, 1.0f });
+
         light_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
