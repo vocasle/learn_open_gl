@@ -59,7 +59,7 @@ set(2.lighting
         2.2.basic_lighting_specular
         3.1.materials
 #        3.2.materials_exercise1
-#        4.1.lighting_maps_diffuse_map
+        4.1.lighting_maps_diffuse_map
 #        4.2.lighting_maps_specular_map
 #        4.4.lighting_maps_exercise4
 #        5.1.light_casters_directional
@@ -152,6 +152,11 @@ foreach(CHAPTER ${CHAPTERS})
                 "src/${CHAPTER}/${DEMO}/*.vert"
                 )
 
+        file(GLOB ASSETS
+            "src/${CHAPTER}/${DEMO}/*.png",
+            "src/${CHAPTER}/${DEMO}/*.jpg"
+        )
+
         foreach(SHADER ${SHADERS})
             add_custom_command(
                 TARGET ${NAME} POST_BUILD
@@ -160,7 +165,7 @@ foreach(CHAPTER ${CHAPTERS})
         endforeach()
 
         foreach(ASSET ${ASSETS})
-            file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/assets)
+            file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/${CHAPTER}/assets)
         endforeach()
     endforeach()
 endforeach()
