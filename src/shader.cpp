@@ -62,7 +62,6 @@ unsigned int compile_program(unsigned int vertex_shader, unsigned int fragment_s
     GL_CALL(glAttachShader(program, vertex_shader));
     GL_CALL(glAttachShader(program, fragment_shader));
     GL_CALL(glLinkProgram(program));
-    GL_CALL(glValidateProgram(program));
     GL_CALL(glDeleteShader(vertex_shader));
     GL_CALL(glDeleteShader(fragment_shader));
 
