@@ -29,7 +29,7 @@ void Texture::load_image(const std::string& image_src_path) const
     );
 
     if (data) {
-        GLenum format;
+        GLenum format = GL_RGB;
         if (text_channels == 1)
             format = GL_RED;
         else if (text_channels == 3)
@@ -37,6 +37,7 @@ void Texture::load_image(const std::string& image_src_path) const
         else if (text_channels == 4)
             format = GL_RGBA;
 
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, renderer_id));
         GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data));
         GL_CALL(glGenerateMipmap(GL_TEXTURE_2D));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
