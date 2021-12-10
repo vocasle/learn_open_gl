@@ -167,8 +167,8 @@ int main()
     };
 
     Material m = chrome;
-    GL_CALL(glActiveTexture(GL_TEXTURE0));
-    Texture("assets/container2.png").bind();
+    Texture diffuse_map("assets/container2.png");
+    Texture specular_map("assets/container2_specular.png");
 
     while (!glfwWindowShouldClose(window)) {
         end = glfwGetTime();
@@ -202,15 +202,19 @@ int main()
         object_shader.set_mat4("projection", projection);
         object_shader.set_mat3("u_normal_mat", normal_matrix);
         object_shader.set_vec3("u_camera_pos", camera_pos);
-        object_shader.set_vec3("u_material.ambient", m.ambient);
+        //object_shader.set_vec3("u_material.ambient", m.ambient);
         object_shader.set_int("u_material.diffuse", 0);
-        object_shader.set_vec3("u_material.specular", m.specular);
+        object_shader.set_int("u_material.specular", 1);
         object_shader.set_float("u_material.shininess", m.shininess);
         object_shader.set_vec3("u_light.position", light_pos);
         object_shader.set_vec3("u_light.ambient", light.ambient);
         object_shader.set_vec3("u_light.diffuse", light.diffuse);
         object_shader.set_vec3("u_light.specular", light.specular);
         object_va.bind();
+        GL_CALL(glActiveTexture(GL_TEXTURE0));
+        diffuse_map.bind();
+        GL_CALL(glActiveTexture(GL_TEXTURE1));
+        specular_map.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         lighting_shader.use();

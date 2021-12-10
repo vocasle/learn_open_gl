@@ -2,7 +2,7 @@
 
 struct Material {
     sampler2D diffuse;
-    vec3 specular;
+    sampler2D specular;
     float shininess;
 };
 
@@ -29,6 +29,7 @@ void main()
 {
 
     vec3 diffuse_map_color = vec3(texture(u_material.diffuse, extern_text_coords));
+    vec3 specular_map_color = vec3(texture(u_material.specular, extern_text_coords));
     // ambient
     vec3 ambient_component =  u_light.ambient * diffuse_map_color;
 
@@ -42,7 +43,7 @@ void main()
    vec3 camera_direction = normalize(-u_camera_pos + extern_frag_pos);
    vec3 reflected_ray = reflect(light_direction, normal);
    float specular = pow(max(dot(camera_direction, reflected_ray), 0.0), u_material.shininess);
-   vec3 specular_component =  u_light.specular * (specular * u_material.specular);
+   vec3 specular_component =  u_light.specular * specular * specular_map_color;
 
     vec3 result_color = ambient_component + diffuse_component + specular_component;
     out_color = vec4(result_color, 1.0);
