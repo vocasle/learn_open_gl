@@ -157,14 +157,16 @@ int main()
         object_shader.set_mat4("view", camera.get_view());
         object_shader.set_mat4("projection", projection);
         object_shader.set_vec3("u_object_color", glm::vec3(1.0f, 0.5f, 0.31f));
-        object_shader.set_vec3("u_light_color", glm::vec3(1.0f));
-        object_shader.set_vec3("u_light_pos", light_pos);
         object_shader.set_mat3("u_normal_mat", normal_matrix);
         object_shader.set_vec3("u_camera_pos", camera_pos);
         object_shader.set_vec3("u_material.ambient", {1.0f, 0.5f, 0.31f});
         object_shader.set_vec3("u_material.diffuse", {1.0f, 0.5f, 0.31f});
         object_shader.set_vec3("u_material.specular", {0.5f, 0.5f, 0.5f});
         object_shader.set_float("u_material.shininess", 32.0f);
+        object_shader.set_vec3("u_light.position", light_pos);
+        object_shader.set_vec3("u_light.ambient", { 0.2f, 0.2f, 0.2f });
+        object_shader.set_vec3("u_light.diffuse", { 0.5f, 0.5f, 0.5f });
+        object_shader.set_vec3("u_light.specular", { 1.0f, 1.0f, 1.0f });
         object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
