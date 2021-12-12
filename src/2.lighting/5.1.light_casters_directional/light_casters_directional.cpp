@@ -127,7 +127,8 @@ int main()
 		-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
 	};
 
-	const glm::vec3 cube_positions[] = {
+	constexpr unsigned int MAX_POSITIONS = 10;
+	constexpr glm::vec3 cube_positions[MAX_POSITIONS] = {
 		glm::vec3(0.0f,  0.0f,  0.0f),
 		glm::vec3(2.0f,  5.0f, -15.0f),
 		glm::vec3(-1.5f, -2.2f, -2.5f),
@@ -140,9 +141,9 @@ int main()
 		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
-	glm::mat4 cube_world_positions[10];
+	glm::mat4 cube_world_positions[MAX_POSITIONS];
 
-	for (unsigned int i = 0; i < 10; i++)
+	for (unsigned int i = 0; i < MAX_POSITIONS; i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, cube_positions[i]);
@@ -231,7 +232,7 @@ int main()
 		object_shader.set_int("u_material.specular", 1);
 		object_shader.set_int("u_material.emission", 2);
 		object_shader.set_float("u_material.shininess", m.shininess);
-		object_shader.set_vec3("u_light.position", light_pos);
+		object_shader.set_vec3("u_light.direction", { -0.2f, -1.0f, -0.3f });
 		object_shader.set_vec3("u_light.ambient", light.ambient);
 		object_shader.set_vec3("u_light.diffuse", light.diffuse);
 		object_shader.set_vec3("u_light.specular", light.specular);
@@ -242,8 +243,9 @@ int main()
 		specular_map.bind();
 		GL_CALL(glActiveTexture(GL_TEXTURE2));
 		emission_map.bind();
-		for (unsigned int i = 0; i < 10; ++i) {
-			object_shader.set_mat4("model", cube_world_positions[i]);
+		for (const auto& cube_world_position : cube_world_positions)
+		{
+			object_shader.set_mat4("model", cube_world_position);
 			GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 		}
 

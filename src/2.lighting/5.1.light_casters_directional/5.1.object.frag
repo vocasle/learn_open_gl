@@ -49,12 +49,11 @@ void main()
    vec3 diffuse_component = u_light.diffuse * diffuse * diffuse_map_color;
 
    // specular
-   vec3 camera_direction = normalize(-u_camera_pos + extern_frag_pos);
-   vec3 reflected_ray = reflect(light_direction, normal);
+   vec3 camera_direction = normalize(u_camera_pos - extern_frag_pos);
+   vec3 reflected_ray = reflect(-light_direction, normal);
    float specular = pow(max(dot(camera_direction, reflected_ray), 0.0), u_material.shininess);
    vec3 specular_component =  u_light.specular * specular * specular_map_color;
 
-    vec3 result_color = ambient_component + diffuse_component + specular_component + emission_map_color;
+    vec3 result_color = ambient_component + diffuse_component + specular_component;
     out_color = vec4(result_color, 1.0);
-    //out_color = vec4(emission_map_color, 1.0);
 }
