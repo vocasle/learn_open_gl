@@ -144,7 +144,7 @@ foreach(CHAPTER ${CHAPTERS})
         add_executable(${NAME} ${SOURCE})
         target_link_libraries(${NAME} PRIVATE ${LIBS})
         target_include_directories(${NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-        set_target_properties(${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CHAPTER}")
+        set_target_properties(${NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${CHAPTER}/${DEMO}")
 
         # copy shader files to build directory
         file(GLOB SHADERS
@@ -153,19 +153,19 @@ foreach(CHAPTER ${CHAPTERS})
                 )
 
         file(GLOB ASSETS
-            "src/${CHAPTER}/${DEMO}/*.png"
-            "src/${CHAPTER}/${DEMO}/*.jpg"
+            "assets/*.png"
+            "assets/*.jpg"
         )
 
         foreach(SHADER ${SHADERS})
             add_custom_command(
                 TARGET ${NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy ${SHADER} ${CMAKE_BINARY_DIR}/${CHAPTER}
+                COMMAND ${CMAKE_COMMAND} -E copy ${SHADER} ${CMAKE_BINARY_DIR}/${CHAPTER}/${DEMO}
             )
         endforeach()
 
         foreach(ASSET ${ASSETS})
-            file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/${CHAPTER}/assets)
+                file(COPY ${ASSET} DESTINATION ${CMAKE_BINARY_DIR}/assets)
         endforeach()
     endforeach()
 endforeach()
