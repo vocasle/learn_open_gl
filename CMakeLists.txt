@@ -153,7 +153,7 @@ foreach(CHAPTER ${CHAPTERS})
                 )
 
         file(GLOB ASSETS
-            "src/${CHAPTER}/${DEMO}/*.png",
+            "src/${CHAPTER}/${DEMO}/*.png"
             "src/${CHAPTER}/${DEMO}/*.jpg"
         )
 
