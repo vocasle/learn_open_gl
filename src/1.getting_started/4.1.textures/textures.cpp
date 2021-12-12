@@ -6,16 +6,12 @@
 
 #include "shader.h"
 #include "stb_image.h"
+#include "utility.h"
 
 struct InputData {
     bool toggle_fill_mode;
     float ratio;
 };
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-}
 
 void processInput(GLFWwindow* window, InputData& input_data)
 {
