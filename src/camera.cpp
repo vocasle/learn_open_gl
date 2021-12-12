@@ -73,3 +73,8 @@ void Camera::update_euler_angles(double x, double y)
 
     update_vectors();
 }
+
+void Camera::toggle_acceleration(bool enable_accel)
+{
+    camera_speed = enable_accel ? 5.0f * default_speed : default_speed;
+}

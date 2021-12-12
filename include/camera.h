@@ -19,6 +19,7 @@ public:
 
     void update_pos(Direction d, double delta_time);
     void update_euler_angles(double x, double y);
+    void toggle_acceleration(bool enable_accel);
 
 private:
     void update_vectors();
@@ -34,6 +35,7 @@ private:
 
     static constexpr glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
     static constexpr float max_pitch = 89.0f;
+    static constexpr float default_speed = 1.0f;
 };
 
 #endif //LEARN_OPEN_GL_SRC_CAMERA_H
