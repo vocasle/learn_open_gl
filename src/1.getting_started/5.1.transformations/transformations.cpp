@@ -18,6 +18,7 @@
 #include "miniaudio.h"
 #include "shader.h"
 #include "stb_image.h"
+#include "utility.h"
 
 struct VertexData {
   unsigned int VAO = 0;
@@ -36,7 +37,7 @@ enum class Difficulty {
   LOW, MEDIUM, HIGH
 };
 
-enum class GridSize : unsigned int8_t {
+enum class GridSize : int8_t {
   SMALL = 8, MEDIUM = 16, BIG = 32
 };
 
@@ -118,8 +119,6 @@ void update_difficulty(GameState &g, Difficulty d) {
 
   reset_game(g);
 }
-
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 void process_input(GLFWwindow *window, GameState &state);
 
@@ -224,7 +223,7 @@ Point spawn_meal(int grid_size, const std::deque<Point> &snake_parts) {
   return {x, y};
 }
 
-std::vector<float> generate_grid(unsigned int32_t max_grid_size) {
+std::vector<float> generate_grid(unsigned int max_grid_size) {
   const float offset = max_grid_size / 2.0f;
   std::vector<float> vertices;
   vertices.reserve(max_grid_size * 4 * 2);
@@ -264,7 +263,7 @@ VertexData init_grid_vertices() {
   return vertex_data;
 }
 
-void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, unsigned int32_t grid_size) {
+void draw_grid(Shader &shader, VertexData &vertex_data, bool update_grid, unsigned int grid_size) {
   shader.use();
   shader.set_mat4("model", glm::mat4(1.0f));
   glBindVertexArray(vertex_data.VAO);
@@ -422,10 +421,6 @@ void setup_uniforms(const Shader &shader, GameState &state) {
   shader.set_mat4("projection", state.camera.projection);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, width, height);
-}
-
 void process_input(GLFWwindow *window, GameState &state) {
   static bool fill = true;
   static bool e_pressed = false;
@@ -534,7 +529,7 @@ GLFWwindow *init_glfw() {
   return window;
 }
 
-void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_unsigned int32 frameCount) {
+void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, unsigned int frameCount) {
   ma_bool32 isLooping = MA_TRUE;
 
   ma_decoder *pDecoder = (ma_decoder *) pDevice->pUserData;
