@@ -20,6 +20,7 @@ public:
     void update_pos(Direction d, double delta_time);
     void update_euler_angles(double x, double y);
     void toggle_acceleration(bool enable_accel);
+    glm::vec3 get_front() const;
 
 private:
     void update_vectors();

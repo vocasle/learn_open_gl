@@ -191,8 +191,8 @@ int main()
 	};
 
 	Material m = bronze;
-	Texture diffuse_map("assets/container2.png");
-	Texture specular_map("assets/container2_specular.png");
+	Texture diffuse_map("../../assets/container2.png");
+	Texture specular_map("../../assets/container2_specular.png");
 
 	while (!glfwWindowShouldClose(window)) {
 		end = glfwGetTime();
@@ -229,6 +229,8 @@ int main()
 		object_shader.set_int("u_material.specular", 1);
 		object_shader.set_float("u_material.shininess", m.shininess);
 		object_shader.set_vec3("u_light.position", light_pos);
+		object_shader.set_vec3("u_light.direction", camera.get_front());
+		object_shader.set_float("u_light.cut_off", glm::cos(glm::radians(12.5f)));
 		object_shader.set_vec3("u_light.ambient", light.ambient);
 		object_shader.set_vec3("u_light.diffuse", light.diffuse);
 		object_shader.set_vec3("u_light.specular", light.specular);

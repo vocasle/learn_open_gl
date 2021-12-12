@@ -78,3 +78,8 @@ void Camera::toggle_acceleration(bool enable_accel)
 {
     camera_speed = enable_accel ? 5.0f * default_speed : default_speed;
 }
+
+glm::vec3 Camera::get_front() const
+{
+    return camera_front;
+}
