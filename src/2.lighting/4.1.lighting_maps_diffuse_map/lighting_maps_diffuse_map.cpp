@@ -133,9 +133,6 @@ int main()
     vbl.add_element<float>(2);
     object_va.add_buffer(vb, vbl);
 
-    VertexArray light_va;
-    light_va.add_buffer(vb, vbl);
-
     GL_CALL(glEnable(GL_DEPTH_TEST));
 
     const glm::mat4 projection = glm::perspective(glm::radians(45.0f), win_width/static_cast<float>(win_height), 0.1f,
@@ -169,6 +166,7 @@ int main()
     Material m = chrome;
     Texture diffuse_map("assets/container2.png");
     Texture specular_map("assets/container2_specular.png");
+    Texture emission_map("assets/matrix.jpg");
 
     while (!glfwWindowShouldClose(window)) {
         end = glfwGetTime();
@@ -205,6 +203,7 @@ int main()
         //object_shader.set_vec3("u_material.ambient", m.ambient);
         object_shader.set_int("u_material.diffuse", 0);
         object_shader.set_int("u_material.specular", 1);
+        object_shader.set_int("u_material.emission", 2);
         object_shader.set_float("u_material.shininess", m.shininess);
         object_shader.set_vec3("u_light.position", light_pos);
         object_shader.set_vec3("u_light.ambient", light.ambient);
@@ -215,6 +214,8 @@ int main()
         diffuse_map.bind();
         GL_CALL(glActiveTexture(GL_TEXTURE1));
         specular_map.bind();
+        GL_CALL(glActiveTexture(GL_TEXTURE2));
+        emission_map.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         lighting_shader.use();
@@ -226,7 +227,8 @@ int main()
         lighting_shader.set_vec3("u_light.diffuse", light.diffuse);
         lighting_shader.set_vec3("u_light.specular", light.specular);
 
-        light_va.bind();
+        //light_va.bind();
+        object_va.bind();
         GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 
         glfwSwapBuffers(window);
