@@ -210,7 +210,7 @@ int main()
 		object_shader.use();
 		object_shader.set_mat4("view", camera.get_view());
 		object_shader.set_mat4("projection", projection);
-		object_shader.set_vec3("view_pos", camera_pos);
+		object_shader.set_vec3("view_pos", camera.get_position());
 		object_shader.set_int("material.diffuse", 0);
 		object_shader.set_int("material.specular", 1);
 		object_shader.set_float("material.shininess", m.shininess);
@@ -218,6 +218,16 @@ int main()
 		object_shader.set_vec3("dir_light.ambient", glm::vec3(0.05f));
 		object_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f));
 		object_shader.set_vec3("dir_light.specular", glm::vec3(0.5f));
+		object_shader.set_vec3("spot_light.position", camera.get_position());
+		object_shader.set_vec3("spot_light.direction", camera.get_front());
+		object_shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(12.5f)));
+		object_shader.set_float("spot_light.cut_off", glm::cos(glm::radians(17.5f)));
+		object_shader.set_vec3("spot_light.ambient", glm::vec3(0.1f));
+		object_shader.set_vec3("spot_light.diffuse", glm::vec3(0.8f));
+		object_shader.set_vec3("spot_light.specular", glm::vec3(1.0f));
+		object_shader.set_float("spot_light.constant", 1.0f);
+		object_shader.set_float("spot_light.linear", 0.09f);
+		object_shader.set_float("spot_light.quadratic", 0.032f);
 		for (unsigned int i = 0; i < NUM_PONT_LIGHTS; ++i) {
 			object_shader.set_float(format("point_lights[{}].constant", i), 1.0f);
 			object_shader.set_float(format("point_lights[{}].linear", i), 0.09f);
