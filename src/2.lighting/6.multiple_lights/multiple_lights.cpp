@@ -178,7 +178,11 @@ int main()
 	double time_span = 0.0;
 	float angle = 1.0f;
 
-	Light light{ {1.2f, 1.0f, 2.0f}, glm::vec3(0.05f), glm::vec3(0.8f), glm::vec3(1.0f) };
+	Light light{ 
+		{1.2f, 1.0f, 2.0f}, 
+			glm::vec3(0.1f, 0.0f, 0.0f), 
+			glm::vec3(0.1f, 0.0f, 0.0f), 
+			glm::vec3(1.0f, 0.0f, 0.0f) };
 	Material bronze{
 		glm::vec3(0.2125f, 0.1275f, 0.054f),
 		glm::vec3(0.714f, 0.4284f, 0.18144f),
@@ -193,7 +197,7 @@ int main()
 		0.6f * 128.0f
 	};
 
-	Material m = bronze;
+	Material m = chrome;
 	Texture diffuse_map("../../assets/container2.png");
 	Texture specular_map("../../assets/container2_specular.png");
 
@@ -204,7 +208,7 @@ int main()
 		process_input(window, camera, time_span);
 		angle += static_cast<float>(time_span);
 
-		GL_CALL(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+		GL_CALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 		GL_CALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
 		object_shader.use();
@@ -215,9 +219,9 @@ int main()
 		object_shader.set_int("material.specular", 1);
 		object_shader.set_float("material.shininess", m.shininess);
 		object_shader.set_vec3("dir_light.direction", {-0.2f, -1.0f, -0.3f});
-		object_shader.set_vec3("dir_light.ambient", glm::vec3(0.05f));
-		object_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f));
-		object_shader.set_vec3("dir_light.specular", glm::vec3(0.5f));
+		object_shader.set_vec3("dir_light.ambient", glm::vec3(0.0f));
+		object_shader.set_vec3("dir_light.diffuse", glm::vec3(0.0f));
+		object_shader.set_vec3("dir_light.specular", glm::vec3(0.0f));
 		object_shader.set_vec3("spot_light.position", camera.get_position());
 		object_shader.set_vec3("spot_light.direction", camera.get_front());
 		object_shader.set_float("spot_light.outer_cut_off", glm::cos(glm::radians(12.5f)));
@@ -229,13 +233,13 @@ int main()
 		object_shader.set_float("spot_light.linear", 0.09f);
 		object_shader.set_float("spot_light.quadratic", 0.032f);
 		for (unsigned int i = 0; i < NUM_PONT_LIGHTS; ++i) {
-			object_shader.set_float(format("point_lights[{}].constant", i), 1.0f);
+			object_shader.set_float(format("point_lights[{}].constant", i), 0.1f);
 			object_shader.set_float(format("point_lights[{}].linear", i), 0.09f);
 			object_shader.set_float(format("point_lights[{}].quadratic", i), 0.032f);
 			object_shader.set_vec3(format("point_lights[{}].position", i), point_lights_positions[i]);
-			object_shader.set_vec3(format("point_lights[{}].ambient", i), light.ambient);
-			object_shader.set_vec3(format("point_lights[{}].diffuse", i), light.diffuse);
-			object_shader.set_vec3(format("point_lights[{}].specular", i), light.specular);
+			object_shader.set_vec3(format("point_lights[{}].ambient", i), light.ambient * glm::vec3(0.3f));
+			object_shader.set_vec3(format("point_lights[{}].diffuse", i), light.diffuse * glm::vec3(0.4f));
+			object_shader.set_vec3(format("point_lights[{}].specular", i), light.specular * glm::vec3(1.0f));
 		}
 		object_va.bind();
 		GL_CALL(glActiveTexture(GL_TEXTURE0));
