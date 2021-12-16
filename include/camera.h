@@ -21,6 +21,7 @@ public:
     void update_euler_angles(double x, double y);
     void toggle_acceleration(bool enable_accel);
     glm::vec3 get_front() const;
+    glm::vec3 get_position() const;
 
 private:
     void update_vectors();
