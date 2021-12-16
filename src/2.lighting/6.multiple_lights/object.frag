@@ -29,10 +29,11 @@ in vec2 text_coords;
 
 out vec4 frag_color;
 
+#define NR_POINT_LIGHTS 4
+
 uniform DirLight dir_light;
-uniform PointLight[4] point_lights;
+uniform PointLight[NR_POINT_LIGHTS] point_lights;
 uniform Material material;
-uniform int NR_POINT_LIGHTS;
 uniform vec3 view_pos;
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 view_dir);
@@ -79,8 +80,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 frag_pos, vec3 view_dir)
 	float spec = pow(max(dot(view_dir, reflect_dir), 0.0), material.shininess);
 	// attenuation
 	float distance = length(light.position - frag_pos);
-	float attenuation = 1.0 / (light.constant + light.linear * distance 
-													+ light.quadratic * (distance * distance));
+	float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 	// combine results
 	vec3 ambient = light.ambient * vec3(texture(material.diffuse, text_coords));
 	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, text_coords));

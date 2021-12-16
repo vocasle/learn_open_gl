@@ -172,14 +172,13 @@ int main()
 
 	const glm::mat4 projection = glm::perspective(glm::radians(45.0f), win_width / static_cast<float>(win_height), 0.1f,
 		100.0f);
-	glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
 
 	double begin = glfwGetTime();
 	double end = 0.0;
 	double time_span = 0.0;
 	float angle = 1.0f;
 
-	Light light{ light_pos, glm::vec3(0.2f), glm::vec3(0.5f), glm::vec3(1.0f) };
+	Light light{ {1.2f, 1.0f, 2.0f}, glm::vec3(0.05f), glm::vec3(0.8f), glm::vec3(1.0f) };
 	Material bronze{
 		glm::vec3(0.2125f, 0.1275f, 0.054f),
 		glm::vec3(0.714f, 0.4284f, 0.18144f),
@@ -216,9 +215,18 @@ int main()
 		object_shader.set_int("material.specular", 1);
 		object_shader.set_float("material.shininess", m.shininess);
 		object_shader.set_vec3("dir_light.direction", {-0.2f, -1.0f, -0.3f});
-		object_shader.set_vec3("dir_light.ambient", light.ambient);
-		object_shader.set_vec3("dir_light.diffuse", light.diffuse);
-		object_shader.set_vec3("dir_light.specular", light.specular);
+		object_shader.set_vec3("dir_light.ambient", glm::vec3(0.05f));
+		object_shader.set_vec3("dir_light.diffuse", glm::vec3(0.4f));
+		object_shader.set_vec3("dir_light.specular", glm::vec3(0.5f));
+		for (unsigned int i = 0; i < NUM_PONT_LIGHTS; ++i) {
+			object_shader.set_float(format("point_lights[{}].constant", i), 1.0f);
+			object_shader.set_float(format("point_lights[{}].linear", i), 0.09f);
+			object_shader.set_float(format("point_lights[{}].quadratic", i), 0.032f);
+			object_shader.set_vec3(format("point_lights[{}].position", i), point_lights_positions[i]);
+			object_shader.set_vec3(format("point_lights[{}].ambient", i), light.ambient);
+			object_shader.set_vec3(format("point_lights[{}].diffuse", i), light.diffuse);
+			object_shader.set_vec3(format("point_lights[{}].specular", i), light.specular);
+		}
 		object_va.bind();
 		GL_CALL(glActiveTexture(GL_TEXTURE0));
 		diffuse_map.bind();
@@ -232,17 +240,17 @@ int main()
 		lighting_shader.use();
 		lighting_shader.set_mat4("view", camera.get_view());
 		lighting_shader.set_mat4("projection", projection);
-		lighting_shader.set_vec3("u_light.position", light_pos);
-		lighting_shader.set_vec3("u_light.ambient", light.ambient);
-		lighting_shader.set_vec3("u_light.diffuse", light.diffuse);
-		lighting_shader.set_vec3("u_light.specular", light.specular);
-		for (const auto &point_lights_position : point_lights_positions) {
+		for (unsigned int i = 0; const auto &point_lights_position : point_lights_positions) {
 			glm::mat4 light_model(1.0f);
 			light_model = glm::translate(light_model, point_lights_position);
 			light_model = glm::scale(light_model, glm::vec3(0.2f));
 			lighting_shader.set_mat4("model", light_model);
+			lighting_shader.set_vec3("u_light.ambient", light.ambient);
+			lighting_shader.set_vec3("u_light.diffuse", light.diffuse);
+			lighting_shader.set_vec3("u_light.specular", light.specular);
 			GL_CALL(glDrawArrays(GL_TRIANGLES, 0, 36));
 		}
+		
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
