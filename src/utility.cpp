@@ -71,3 +71,8 @@ GLFWwindow* init_gl_context(int width, int height)
 
     return window;
 }
+
+std::string format(const std::string& fmt)
+{
+    return fmt;
+}

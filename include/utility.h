@@ -32,4 +32,23 @@ void framebuffer_size_callback(GLFWwindow * window, int width, int height);
 
 GLFWwindow* init_gl_context(int width, int height);
 
+std::string format(const std::string & fmt);
+
+template <typename Arg, typename ...Args>
+std::string format(const std::string & fmt, Arg value, Args ...args)
+{
+	std::ostringstream out;
+	for (auto it = std::begin(fmt); it != std::end(fmt); ++it) {
+		if (*it == '{' && (it + 1) != std::end(fmt) && *(it + 1) == '}') {
+			it += 2;
+			out << value;
+			out << format(std::string(it, std::end(fmt)), args...);
+			break;
+		}
+		else
+			out << *it;
+	}
+	return out.str();
+}
+
 #endif //LEARN_OPEN_GL_INCLUDE_UTILITY_H
