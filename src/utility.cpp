@@ -41,6 +41,9 @@ glm::vec3 calc_normal(const glm::vec3& a, const glm::vec3& b, const glm::vec3& c
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    const auto container = static_cast<GlfwContainer*>(glfwGetWindowUserPointer(window));
+    container->win_height = height;
+    container->win_width = width;
     glViewport(0, 0, width, height);
 }
 
@@ -50,7 +53,7 @@ GLFWwindow* init_gl_context(int width, int height)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return nullptr;
     }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -75,4 +78,26 @@ GLFWwindow* init_gl_context(int width, int height)
 std::string format(const std::string& fmt)
 {
     return fmt;
+}
+
+void APIENTRY gl_debug_message_callback(GLenum source,
+                               GLenum type,
+                               GLuint severity,
+                               GLsizei length,
+                               const GLchar *message,
+                               const void *user_param)
+{
+    std::cerr << "OPENGL::ERROR::" << message << std::endl;
+}
+
+void gl_print_debug_info() {
+    std::cout << "OpenGL version: "
+        << glGetString(GL_VERSION)
+        << "\nOpenGL Vendor: "
+        << glGetString(GL_VENDOR)
+        << std::endl;
+}
+
+void gl_enable_debug_output() {
+    GL_CALL(glEnable(GL_DEBUG_OUTPUT));
 }

@@ -36,13 +36,13 @@ int main()
         static bool first_time = false;
         static double last_x = 0.0;
         static double last_y = 0.0;
-        if (const auto c = static_cast<Camera*>(glfwGetWindowUserPointer(w))) {
+        if (const auto c = static_cast<GlfwContainer*>(glfwGetWindowUserPointer(w))) {
             if (first_time) {
                 last_x = x;
                 last_y = y;
                 first_time = false;
             }
-            c->update_euler_angles(x - last_x, last_y - y);
+            c->camera.update_euler_angles(x - last_x, last_y - y);
             last_x = x;
             last_y = y;
         }
