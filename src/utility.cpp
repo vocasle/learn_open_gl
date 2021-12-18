@@ -80,11 +80,11 @@ std::string format(const std::string& fmt)
     return fmt;
 }
 
-void APIENTRY gl_debug_message_callback(GLenum source,
-                               GLenum type,
-                               GLuint severity,
-                               GLsizei length,
-                               const GLchar *message,
+void APIENTRY gl_debug_message_callback(int source,
+                               int type,
+                               unsigned int severity,
+                               int length,
+                               const char *message,
                                const void *user_param)
 {
     std::cerr << "OPENGL::ERROR::" << message << std::endl;
