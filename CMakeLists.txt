@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
-set(LIBS glfw glm glad stb_image minaudio)
+set(LIBS glfw glm glad stb_image minaudio assimp)
 
 if (!WIN32)
 find_package(OpenGL REQUIRED)
@@ -70,7 +70,7 @@ set(2.lighting
         )
 
 set(3.model_loading
-#        1.model_loading
+        1.model_loading
         )
 
 set(4.advanced_opengl
@@ -153,8 +153,8 @@ foreach(CHAPTER ${CHAPTERS})
                 )
 
         file(GLOB ASSETS
-            "assets/*.png"
-            "assets/*.jpg"
+            "assets/*/**.*"
+            "assets/*.*"
         )
 
         foreach(SHADER ${SHADERS})
