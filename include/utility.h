@@ -57,12 +57,12 @@ std::string format(const std::string & fmt, Arg value, Args ...args)
 	return out.str();
 }
 
-void APIENTRY gl_debug_message_callback(GLenum source,
-                               GLenum type,
-                               GLuint severity,
-                               GLsizei length,
-                               const GLchar *message,
-                               const void *user_param);
+void APIENTRY gl_debug_message_callback(int source,
+                                        int type,
+                                        unsigned int severity,
+                                        int length,
+                                        const char *message,
+                                        const void *user_param);
 
 void gl_print_debug_info();
 void gl_enable_debug_output();
